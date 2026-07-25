@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Product, seedProducts, categories } from "@/lib/products";
 import ProductCard from "@/components/ProductCard";
-import HeroCarousel from "@/components/HeroCarousel";
+import HeroShowcase from "@/components/HeroShowcase";
 
 function ShopContent() {
   const searchParams = useSearchParams();
@@ -30,7 +30,7 @@ function ShopContent() {
 
   return (
     <main>
-      <HeroCarousel />
+      <HeroShowcase />
 
       <div className="wrap">
         <div className="filters">
