@@ -355,6 +355,15 @@ export default function AdminPage() {
                       onChange={(e) => updateSlide(s.id, { subheading: e.target.value })}
                       placeholder="Subheading"
                     />
+                    <select
+                      className="admin-input"
+                      value={s.focus || "top"}
+                      onChange={(e) => updateSlide(s.id, { focus: e.target.value as HeroSlide["focus"] })}
+                    >
+                      <option value="top">Image focus: Top (faces, portrait photos)</option>
+                      <option value="center">Image focus: Center</option>
+                      <option value="bottom">Image focus: Bottom</option>
+                    </select>
                   </div>
 
                   <div className="admin-slide-actions">

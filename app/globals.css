@@ -135,8 +135,8 @@ img {
 /* Hero carousel */
 .hero-carousel {
   position: relative;
-  height: min(72vh, 620px);
-  min-height: 380px;
+  height: min(85vh, 760px);
+  min-height: 420px;
   overflow: hidden;
   border-bottom: 1px solid var(--line);
   background: var(--card-bg);
@@ -148,8 +148,24 @@ img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Source photos are typically portrait (model shots) being cropped into
+     a wide banner — object-position controls which part stays in frame.
+     Default (unset) matches "top", which suits most fashion shots. */
+  object-position: 50% 12%;
   opacity: 0;
   transition: opacity 1s ease;
+}
+
+.hero-carousel-image.focus-top {
+  object-position: 50% 12%;
+}
+
+.hero-carousel-image.focus-center {
+  object-position: 50% 50%;
+}
+
+.hero-carousel-image.focus-bottom {
+  object-position: 50% 88%;
 }
 
 .hero-carousel-image.is-active {

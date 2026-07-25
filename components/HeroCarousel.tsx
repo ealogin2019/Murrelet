@@ -45,7 +45,7 @@ export default function HeroCarousel() {
           key={s.id}
           src={s.image}
           alt={s.heading || ""}
-          className={`hero-carousel-image ${i === active ? "is-active" : ""}`}
+          className={`hero-carousel-image focus-${s.focus || "top"} ${i === active ? "is-active" : ""}`}
         />
       ))}
       <div className="hero-carousel-scrim" />
