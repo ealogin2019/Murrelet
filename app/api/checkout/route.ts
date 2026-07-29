@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { getCatalog } from "@/lib/blob-store";
+import { getCatalog } from "@/lib/catalog-store";
 import { variantPrice } from "@/lib/catalog";
 
 export async function POST(req: NextRequest) {

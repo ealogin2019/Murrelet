@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCatalog, saveCatalog } from "@/lib/blob-store";
+import { getCatalog, saveCatalog } from "@/lib/catalog-store";
 import { Product } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";

@@ -1,16 +1,12 @@
-// Persistence seam.
+// Vercel Blob: hero slides and uploaded imagery.
 //
-// Everything the app reads about the catalog goes through getCatalog(). Today
-// that resolves to a JSON document in Vercel Blob (falling back to the seed);
-// when Supabase credentials land, only the bodies of getCatalog/saveCatalog
-// change — see supabase/migrations/0001_catalog.sql for the target schema.
-// No caller outside this file knows where the data lives.
+// The catalog itself moved to Supabase — see lib/catalog-store.ts. Blob is
+// kept for what it is genuinely good at (holding image files) plus the small
+// hero document.
 
 import { head, put } from "@vercel/blob";
-import { Product, seedCatalog } from "./catalog";
 import { HeroSlide, seedHeroSlides } from "./hero";
 
-const CATALOG_PATH = "data/catalog.json";
 /** Pre-variant catalog. Read-only, kept so the old data can be recovered. */
 const LEGACY_PRODUCTS_PATH = "data/products.json";
 const HERO_PATH = "data/hero.json";
@@ -44,20 +40,6 @@ async function writeJson(pathname: string, data: unknown) {
     contentType: "application/json",
     allowOverwrite: true,
   });
-}
-
-export async function getCatalog(): Promise<Product[]> {
-  const stored = await readJson<Product[]>(CATALOG_PATH);
-  // Guard against a half-written or pre-variant document: anything without a
-  // variants array is not this model, so prefer the seed over rendering junk.
-  if (Array.isArray(stored) && stored.every((p) => Array.isArray(p?.variants))) {
-    return stored;
-  }
-  return seedCatalog;
-}
-
-export async function saveCatalog(products: Product[]): Promise<void> {
-  await writeJson(CATALOG_PATH, products);
 }
 
 /**

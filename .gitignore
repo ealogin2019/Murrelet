@@ -12,3 +12,6 @@ next-env.d.ts
 
 # TypeScript incremental build artifact
 tsconfig.tsbuildinfo
+
+# Supabase CLI scratch state (project ref, pooler URL, versions)
+supabase/.temp/
