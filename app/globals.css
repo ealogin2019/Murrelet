@@ -1135,3 +1135,28 @@ img {
 .price-now {
   color: var(--sale);
 }
+
+/* Order confirmation */
+.order-summary {
+  border-top: 1px solid var(--line);
+  margin: 24px 0;
+  padding-top: 8px;
+  text-align: left;
+  max-width: 520px;
+}
+
+.order-line {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.order-line img {
+  width: 64px;
+  height: 80px;
+  object-fit: cover;
+  background: var(--card-bg);
+}

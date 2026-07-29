@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getCatalog } from "@/lib/catalog-store";
 import { variantPrice } from "@/lib/catalog";
+import { attachStripeSession, createPendingOrder } from "@/lib/orders";
 
 export async function POST(req: NextRequest) {
   const secretKey = process.env.STRIPE_SECRET_KEY;
@@ -63,11 +64,13 @@ export async function POST(req: NextRequest) {
       }
 
       items.push({
+        skuId: match.sku.id,
         name: match.product.name,
         colour: match.variant.colour,
         size: match.sku.size,
         price: variantPrice(match.product, match.variant),
         quantity,
+        image: match.variant.images[0] ?? null,
       });
     }
 
@@ -120,6 +123,22 @@ export async function POST(req: NextRequest) {
       },
     ];
 
+    // Record the order before sending the customer to Stripe, so what was
+    // sold and at what price is captured from the server's own resolution
+    // rather than reconstructed later from a webhook payload.
+    const order = await createPendingOrder(
+      items.map((i) => ({
+        skuId: i.skuId,
+        productName: i.name,
+        colour: i.colour,
+        size: i.size,
+        unitPricePence: i.price,
+        quantity: i.quantity,
+        imageUrl: i.image,
+      })),
+      subtotal
+    );
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items,
@@ -127,9 +146,13 @@ export async function POST(req: NextRequest) {
         allowed_countries: ["GB", "IE"],
       },
       shipping_options,
+      client_reference_id: order.id,
+      metadata: { order_id: order.id, order_number: order.orderNumber },
       success_url: `${siteUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/cart`,
     });
+
+    await attachStripeSession(order.id, session.id);
 
     return NextResponse.json({ url: session.url });
   } catch (err: any) {
