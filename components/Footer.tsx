@@ -10,7 +10,7 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="wrap">
         <p>&copy; {new Date().getFullYear()} Murrelet. All rights reserved.</p>
-        <p>Free shipping on orders over $75 · Returns accepted within 30 days.</p>
+        <p>Free standard delivery over £100 · Returns accepted within 30 days.</p>
       </div>
     </footer>
   );

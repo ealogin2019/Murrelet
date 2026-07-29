@@ -3,6 +3,12 @@
 import { useEffect, useState } from "react";
 import { HeroSlide, seedHeroSlides } from "@/lib/hero";
 
+/**
+ * Full-bleed single image with the copy set over its lower third — the
+ * reference's move, and the one that makes the photography do the work.
+ * Slides beyond the first are ignored here by design; HeroCarousel is still
+ * available if a rotating hero is wanted later.
+ */
 export default function HeroShowcase() {
   const [slides, setSlides] = useState<HeroSlide[]>(seedHeroSlides);
 
@@ -19,25 +25,23 @@ export default function HeroShowcase() {
       });
   }, []);
 
-  if (slides.length === 0) return null;
-
-  const heading = slides[0];
-  const images = slides.slice(0, 4);
+  const slide = slides[0];
+  if (!slide) return null;
 
   return (
-    <section className="hero-static">
-      <div className="wrap hero-static-text">
-        {heading.eyebrow && <p className="hero-eyebrow">{heading.eyebrow}</p>}
-        {heading.heading && <h1>{heading.heading}</h1>}
-        {heading.subheading && <p>{heading.subheading}</p>}
-      </div>
-
-      <div className={`hero-grid hero-grid-${images.length}`}>
-        {images.map((s) => (
-          <div className="hero-grid-item" key={s.id}>
-            <img src={s.image} alt={s.heading || ""} />
-          </div>
-        ))}
+    <section className="hero-full">
+      <img
+        className={`hero-full-image focus-${slide.focus || "top"}`}
+        src={slide.image}
+        alt={slide.heading || ""}
+        // Always the largest above-the-fold asset — never lazy.
+        loading="eager"
+      />
+      <div className="hero-full-scrim" />
+      <div className="wrap hero-full-content">
+        {slide.eyebrow && <p className="hero-eyebrow">{slide.eyebrow}</p>}
+        {slide.heading && <h1>{slide.heading}</h1>}
+        {slide.subheading && <p className="hero-full-sub">{slide.subheading}</p>}
       </div>
     </section>
   );

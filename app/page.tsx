@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Product, seedProducts, categories } from "@/lib/products";
+import { Product, seedCatalog, categories, categoryLabels } from "@/lib/catalog";
 import ProductCard from "@/components/ProductCard";
 import HeroShowcase from "@/components/HeroShowcase";
 
@@ -10,7 +10,7 @@ function ShopContent() {
   const searchParams = useSearchParams();
   const urlCategory = searchParams.get("category");
   const [filter, setFilter] = useState<string>(urlCategory || "all");
-  const [products, setProducts] = useState<Product[]>(seedProducts);
+  const [products, setProducts] = useState<Product[]>(seedCatalog);
 
   useEffect(() => {
     fetch("/api/products")
@@ -46,7 +46,7 @@ function ShopContent() {
               className={`filter-btn ${filter === c ? "active" : ""}`}
               onClick={() => setFilter(c)}
             >
-              {c.replace("-", " ")}
+              {categoryLabels[c]}
             </button>
           ))}
         </div>

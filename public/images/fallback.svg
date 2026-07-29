@@ -1,11 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 640">
-  <rect width="480" height="640" fill="#f1eee7"/>
-  <rect x="1" y="1" width="478" height="638" fill="none" stroke="#e6e1d6" stroke-width="1"/>
-  <g stroke="#4a453e" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="240" cy="205" r="9"/>
-    <line x1="240" y1="214" x2="240" y2="234"/>
-    <polyline points="130,300 240,234 350,300"/>
-    <line x1="160" y1="288" x2="320" y2="288"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" width="300" height="400" role="img" aria-label="No image">
+  <rect width="300" height="400" fill="#f4f4f4"/>
+  <g fill="none" stroke="#c9c9c9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M150 168v-8a10 10 0 1 1 10 10"/>
+    <path d="M104 214l46-30 46 30"/>
+    <path d="M104 214h92"/>
   </g>
-  <text x="240" y="375" font-family="Georgia, 'Times New Roman', serif" font-size="15" letter-spacing="2" fill="#9c9384" text-anchor="middle">NO PHOTO YET</text>
+  <text x="150" y="252" fill="#a8a8a8" font-family="system-ui, sans-serif" font-size="12" letter-spacing="1.6" text-anchor="middle">NO IMAGE</text>
 </svg>

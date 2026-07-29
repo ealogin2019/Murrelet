@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { getProducts } from "@/lib/blob-store";
+import { getCatalog } from "@/lib/blob-store";
+import { variantPrice } from "@/lib/catalog";
 
 export async function POST(req: NextRequest) {
   const secretKey = process.env.STRIPE_SECRET_KEY;
@@ -16,9 +17,10 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const cartItems = body.items as {
-      id: string;
+      skuId: string;
       name: string;
       price: number;
+      colour: string;
       size: string;
       quantity: number;
     }[];
@@ -27,26 +29,55 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Cart is empty." }, { status: 400 });
     }
 
-    // Never trust a price sent from the browser — look up the current price
-    // for each product id from the live catalog so an edited request body
-    // can't change what's actually charged.
-    const catalog = await getProducts();
-    const items = cartItems.map((cartItem) => {
-      const current = catalog.find((p) => p.id === cartItem.id);
-      return {
-        ...cartItem,
-        name: current?.name ?? cartItem.name,
-        price: current?.price ?? cartItem.price,
-      };
-    });
+    // Never trust anything the browser sent about money. Resolve every line
+    // from the live catalog by sku id and price it from the variant override
+    // (falling back to the product list price). A tampered request body can
+    // change the quantity but not the unit price.
+    const catalog = await getCatalog();
+    const items = [];
+    for (const cartItem of cartItems) {
+      const quantity = Math.max(1, Math.floor(Number(cartItem.quantity) || 1));
+      const match = catalog
+        .flatMap((p) =>
+          p.variants.flatMap((v) =>
+            v.skus
+              .filter((s) => s.id === cartItem.skuId)
+              .map((s) => ({ product: p, variant: v, sku: s }))
+          )
+        )
+        .at(0);
+
+      // A line that no longer resolves is a deleted or renamed SKU. Fail the
+      // whole checkout rather than quietly charging the browser's price.
+      if (!match) {
+        return NextResponse.json(
+          { error: "An item in your bag is no longer available. Please refresh." },
+          { status: 409 }
+        );
+      }
+      if (!match.sku.inStock) {
+        return NextResponse.json(
+          { error: `${match.product.name} (${match.variant.colour}, ${match.sku.size}) is out of stock.` },
+          { status: 409 }
+        );
+      }
+
+      items.push({
+        name: match.product.name,
+        colour: match.variant.colour,
+        size: match.sku.size,
+        price: variantPrice(match.product, match.variant),
+        quantity,
+      });
+    }
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `${req.nextUrl.origin}`;
 
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map((item) => ({
       price_data: {
-        currency: "usd",
+        currency: "gbp",
         product_data: {
-          name: `${item.name} — Size ${item.size}`,
+          name: `${item.name} — ${item.colour}, ${item.size}`,
         },
         unit_amount: item.price,
       },
@@ -55,14 +86,21 @@ export async function POST(req: NextRequest) {
 
     const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
-    // Basic flat-rate shipping. Free over $75, otherwise a flat $5 standard
-    // rate plus an optional $15 express option.
+    // Flat-rate UK shipping. Free over £100, otherwise £4.95 standard plus an
+    // optional £9.95 express option. Thresholds in pence.
+    const FREE_SHIPPING_THRESHOLD = 10000;
     const shipping_options: Stripe.Checkout.SessionCreateParams.ShippingOption[] = [
       {
         shipping_rate_data: {
           type: "fixed_amount",
-          fixed_amount: { amount: subtotal >= 7500 ? 0 : 500, currency: "usd" },
-          display_name: subtotal >= 7500 ? "Free shipping" : "Standard shipping (3–5 days)",
+          fixed_amount: {
+            amount: subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 495,
+            currency: "gbp",
+          },
+          display_name:
+            subtotal >= FREE_SHIPPING_THRESHOLD
+              ? "Free standard delivery"
+              : "Standard delivery (3–5 days)",
           delivery_estimate: {
             minimum: { unit: "business_day", value: 3 },
             maximum: { unit: "business_day", value: 5 },
@@ -72,8 +110,8 @@ export async function POST(req: NextRequest) {
       {
         shipping_rate_data: {
           type: "fixed_amount",
-          fixed_amount: { amount: 1500, currency: "usd" },
-          display_name: "Express shipping (1–2 days)",
+          fixed_amount: { amount: 995, currency: "gbp" },
+          display_name: "Express delivery (1–2 days)",
           delivery_estimate: {
             minimum: { unit: "business_day", value: 1 },
             maximum: { unit: "business_day", value: 2 },
@@ -86,7 +124,7 @@ export async function POST(req: NextRequest) {
       mode: "payment",
       line_items,
       shipping_address_collection: {
-        allowed_countries: ["US", "CA", "GB", "AU", "IE"],
+        allowed_countries: ["GB", "IE"],
       },
       shipping_options,
       success_url: `${siteUrl}/success?session_id={CHECKOUT_SESSION_ID}`,

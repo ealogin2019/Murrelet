@@ -1,8 +1,18 @@
+// Persistence seam.
+//
+// Everything the app reads about the catalog goes through getCatalog(). Today
+// that resolves to a JSON document in Vercel Blob (falling back to the seed);
+// when Supabase credentials land, only the bodies of getCatalog/saveCatalog
+// change — see supabase/migrations/0001_catalog.sql for the target schema.
+// No caller outside this file knows where the data lives.
+
 import { head, put } from "@vercel/blob";
-import { Product, seedProducts } from "./products";
+import { Product, seedCatalog } from "./catalog";
 import { HeroSlide, seedHeroSlides } from "./hero";
 
-const PRODUCTS_PATH = "data/products.json";
+const CATALOG_PATH = "data/catalog.json";
+/** Pre-variant catalog. Read-only, kept so the old data can be recovered. */
+const LEGACY_PRODUCTS_PATH = "data/products.json";
 const HERO_PATH = "data/hero.json";
 
 function blobConfigured() {
@@ -36,13 +46,28 @@ async function writeJson(pathname: string, data: unknown) {
   });
 }
 
-export async function getProducts(): Promise<Product[]> {
-  const stored = await readJson<Product[]>(PRODUCTS_PATH);
-  return stored ?? seedProducts;
+export async function getCatalog(): Promise<Product[]> {
+  const stored = await readJson<Product[]>(CATALOG_PATH);
+  // Guard against a half-written or pre-variant document: anything without a
+  // variants array is not this model, so prefer the seed over rendering junk.
+  if (Array.isArray(stored) && stored.every((p) => Array.isArray(p?.variants))) {
+    return stored;
+  }
+  return seedCatalog;
 }
 
-export async function saveProducts(products: Product[]): Promise<void> {
-  await writeJson(PRODUCTS_PATH, products);
+export async function saveCatalog(products: Product[]): Promise<void> {
+  await writeJson(CATALOG_PATH, products);
+}
+
+/**
+ * The flat pre-variant catalog, if one was ever saved. Nothing renders from
+ * this — it exists so the old Blob document (which holds uploaded product
+ * photos) can be exported before the Supabase migration rather than silently
+ * abandoned.
+ */
+export async function getLegacyProducts(): Promise<unknown[] | null> {
+  return readJson<unknown[]>(LEGACY_PRODUCTS_PATH);
 }
 
 export async function getHeroSlides(): Promise<HeroSlide[]> {

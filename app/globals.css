@@ -1,13 +1,28 @@
 :root {
-  --bg: #f8f6f2;
-  --ink: #2f2b26;
-  --muted: #9c9384;
-  --line: #e6e1d6;
-  --card-bg: #f1eee7;
-  --accent: #2f2b26;
+  /* Editorial palette — white field, deep navy brand, hairline rules.
+     Money-adjacent copy (sale prices, "selected colours from") uses --sale,
+     the only warm colour in the system; keep it for that job alone. */
+  --bg: #ffffff;
+  --ink: #1c1c1c;
+  --navy: #041e42;
+  --muted: #6f6f6f;
+  --line: #e4e4e4;
+  --card-bg: #f4f4f4;
+  --sale: #94643a;
+  --accent: var(--navy);
   --accent-contrast: #ffffff;
   --max-width: 1180px;
-  --serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  /* Wide-tracked uppercase micro-labels carry most of the editorial voice.
+     Applied via .eyebrow and the *-label classes rather than ad hoc. */
+  --track-wide: 0.14em;
+}
+
+.eyebrow {
+  font-size: 0.68rem;
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 * {
@@ -59,11 +74,16 @@ img {
   height: 68px;
 }
 
+/* Wordmark only in the header — the bird mark's fine counters mud below
+   ~24px, so it's reserved for the footer and favicon. */
 .logo {
-  font-family: var(--serif);
-  font-weight: 600;
-  font-size: 1.4rem;
-  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+}
+
+.logo img {
+  height: 15px;
+  width: auto;
 }
 
 .nav {
@@ -93,7 +113,7 @@ img {
 }
 
 .cart-count {
-  background: var(--ink);
+  background: var(--navy);
   color: var(--accent-contrast);
   border-radius: 999px;
   font-size: 0.72rem;
@@ -261,9 +281,9 @@ img {
 }
 
 .filter-btn.active {
-  background: var(--ink);
+  background: var(--navy);
   color: var(--accent-contrast);
-  border-color: var(--ink);
+  border-color: var(--navy);
 }
 
 /* Product grid */
@@ -280,10 +300,8 @@ img {
 
 .card-image {
   aspect-ratio: 3 / 4;
-  border-radius: 4px;
   overflow: hidden;
   background: var(--card-bg);
-  margin-bottom: 14px;
 }
 
 .card-image img {
@@ -308,7 +326,13 @@ img {
 
 .card-price {
   font-size: 0.85rem;
-  color: var(--muted);
+  color: var(--ink);
+}
+
+/* "Selected colours from £x" — sits inline after the list price. */
+.card-price-from {
+  color: var(--sale);
+  margin-left: 6px;
 }
 
 /* Product detail */
@@ -327,7 +351,6 @@ img {
 }
 
 .product-image {
-  border-radius: 4px;
   overflow: hidden;
   background: var(--card-bg);
   aspect-ratio: 3/4;
@@ -378,30 +401,38 @@ img {
 .size-btn {
   border: 1px solid var(--line);
   background: transparent;
-  padding: 9px 14px;
-  border-radius: 2px;
+  padding: 11px 14px;
+  border-radius: 0;
   cursor: pointer;
   font-size: 0.85rem;
-  min-width: 46px;
+  min-width: 56px;
 }
 
+/* Selected size is outlined, not filled — the filled state is reserved for
+   the primary action so the page has exactly one navy block. */
 .size-btn.active {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: var(--accent-contrast);
+  border-color: var(--navy);
+  box-shadow: inset 0 0 0 1px var(--navy);
+}
+
+.size-btn:disabled {
+  color: var(--line);
+  border-color: var(--line);
+  cursor: not-allowed;
+  text-decoration: line-through;
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--ink);
+  background: var(--navy);
   color: var(--accent-contrast);
   border: none;
-  padding: 14px 28px;
-  border-radius: 2px;
+  padding: 16px 28px;
+  border-radius: 0;
   font-size: 0.78rem;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--track-wide);
   text-transform: uppercase;
   cursor: pointer;
   width: 100%;
@@ -825,4 +856,282 @@ img {
   .hero-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Variant UI — PLP swatch rail, PDP colour grid
+   --------------------------------------------------------------------------- */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.card-image {
+  position: relative;
+  display: block;
+}
+
+.card-badge {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 0.62rem;
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  padding: 6px 14px;
+  white-space: nowrap;
+}
+
+.card-text {
+  display: block;
+  padding-top: 12px;
+}
+
+.card-colours {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 6px 0 0;
+}
+
+/* Swatches */
+.swatch-rail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+}
+
+.swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  padding: 0;
+  cursor: pointer;
+  flex: none;
+}
+
+/* The selected swatch gets a detached ring rather than a thicker border, so
+   pale colours (white, cream) stay distinguishable from the page. */
+.swatch.is-active {
+  box-shadow: 0 0 0 1px var(--bg), 0 0 0 2px var(--navy);
+}
+
+.swatch-lg {
+  width: 30px;
+  height: 30px;
+}
+
+.swatch-more {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.swatch-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+/* Above md the rail overlays the image on hover, matching the reference.
+   Below md there is no hover to reveal it with, so it stays where it is —
+   static, under the image, always visible. */
+@media (min-width: 768px) {
+  .swatch-rail {
+    /* Pulled up over the bottom of the image by exactly its own height
+       (22px swatch + 2×12px padding). A negative margin can't drift the way
+       an absolute offset calculated from the card's height would. */
+    position: relative;
+    z-index: 1;
+    margin-top: -46px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.92);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+  }
+
+  .card:hover .swatch-rail,
+  .card:focus-within .swatch-rail {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Product detail */
+.breadcrumb {
+  display: flex;
+  gap: 8px;
+  padding: 24px 0 0;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.product-gallery {
+  display: grid;
+  gap: 8px;
+}
+
+.badge-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  display: grid;
+  gap: 6px;
+}
+
+.badge-list li {
+  font-size: 0.68rem;
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+}
+
+.product-delivery {
+  margin: 16px 0 32px;
+}
+
+.product-details {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  display: grid;
+  gap: 4px;
+}
+
+/* Admin — per-colour rows */
+.admin-thumb-static {
+  cursor: default;
+}
+
+.admin-variants {
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.admin-variants-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.admin-variant {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-swatch-thumb {
+  position: relative;
+  width: 44px;
+  height: 56px;
+  flex: none;
+  cursor: pointer;
+  background: var(--card-bg);
+}
+
+.admin-swatch-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-swatch-thumb span {
+  position: absolute;
+  inset: auto 0 0 0;
+  font-size: 0.58rem;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+}
+
+.admin-input-swatch {
+  width: 48px;
+  padding: 2px;
+  flex: none;
+}
+
+/* Full-bleed hero */
+.hero-full {
+  position: relative;
+  height: min(78vh, 720px);
+  min-height: 420px;
+  overflow: hidden;
+  background: var(--card-bg);
+}
+
+.hero-full-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 20%;
+}
+
+.hero-full-image.focus-center { object-position: 50% 50%; }
+.hero-full-image.focus-bottom { object-position: 50% 85%; }
+
+/* Weighted to the bottom so the copy stays legible without dimming the
+   whole photograph. */
+.hero-full-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+.hero-full-content {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 48px;
+  color: #fff;
+}
+
+.hero-full-content .hero-eyebrow {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 12px;
+}
+
+.hero-full-content h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  margin: 0 0 10px;
+  color: #fff;
+}
+
+.hero-full-sub {
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 44ch;
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+/* The value in "Colour: White" is a proper noun, not a micro-label. */
+.size-label strong {
+  text-transform: none;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.price-was {
+  text-decoration: line-through;
+  color: var(--muted);
+  margin-right: 8px;
+}
+
+.price-now {
+  color: var(--sale);
 }

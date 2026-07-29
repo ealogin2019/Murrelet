@@ -13,16 +13,15 @@ export default function Header() {
   return (
     <header className="site-header">
       <div className="wrap">
-        <Link href="/" className="logo">
-          Murrelet
+        <Link href="/" className="logo" aria-label="Murrelet — home">
+          <img src="/brand/logo-wordmark.png" alt="Murrelet" />
         </Link>
         <nav className="nav">
-          <Link href="/?category=t-shirts">T-Shirts</Link>
-          <Link href="/?category=jeans">Jeans</Link>
-          <Link href="/?category=hoodies">Hoodies</Link>
-          <Link href="/?category=jumpers">Jumpers</Link>
+          <Link href="/?category=shirts">Shirts</Link>
+          <Link href="/?category=polo-shirts">Polo Shirts</Link>
+          <Link href="/?category=shorts">Shorts</Link>
           <Link href="/cart" className="cart-link">
-            Cart
+            Bag
             {itemCount > 0 && <span className="cart-count">{itemCount}</span>}
           </Link>
         </nav>

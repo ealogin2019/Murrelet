@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProducts, saveProducts } from "@/lib/blob-store";
-import { Product } from "@/lib/products";
+import { getCatalog, saveCatalog } from "@/lib/blob-store";
+import { Product } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
 
 // Protected by middleware.ts (requires a valid admin session cookie).
 
 export async function GET() {
-  const products = await getProducts();
+  const products = await getCatalog();
   return NextResponse.json({ products });
 }
 
@@ -19,6 +19,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Expected { products: Product[] }." }, { status: 400 });
   }
 
+  // Structural validation. The admin UI cannot yet author variants, so this
+  // guards against a client posting the old flat shape and wiping the colour
+  // data — a save that looks successful and silently destroys the catalog is
+  // the worst possible failure here.
   for (const p of products) {
     if (!p.id || !p.slug || !p.name || typeof p.price !== "number") {
       return NextResponse.json(
@@ -26,10 +30,30 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    if (!Array.isArray(p.variants) || p.variants.length === 0) {
+      return NextResponse.json(
+        { error: `Product "${p.name}" has no variants. Refusing to save.` },
+        { status: 400 }
+      );
+    }
+    for (const v of p.variants) {
+      if (!v.id || !v.colour || !Array.isArray(v.skus) || v.skus.length === 0) {
+        return NextResponse.json(
+          { error: `Colour "${v.colour || v.id}" on "${p.name}" is incomplete.` },
+          { status: 400 }
+        );
+      }
+      if (v.price != null && (typeof v.price !== "number" || v.price < 0)) {
+        return NextResponse.json(
+          { error: `Colour "${v.colour}" on "${p.name}" has an invalid price override.` },
+          { status: 400 }
+        );
+      }
+    }
   }
 
   try {
-    await saveProducts(products);
+    await saveCatalog(products);
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Failed to save products." }, { status: 500 });

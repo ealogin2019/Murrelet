@@ -2,29 +2,34 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 
+// A cart line is one SKU — a size within a colour. skuId is the only key;
+// (product, size) is no longer unique now that colours exist.
 export type CartItem = {
-  id: string; // product id
+  skuId: string;
   slug: string;
   name: string;
-  price: number; // cents
-  image: string;
-  fallbackImage: string;
+  colour: string;
   size: string;
+  price: number; // pence, resolved from the variant at add-to-bag time
+  image: string;
   quantity: number;
 };
 
 type CartContextType = {
   items: CartItem[];
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  removeItem: (id: string, size: string) => void;
-  updateQuantity: (id: string, size: string, quantity: number) => void;
+  removeItem: (skuId: string) => void;
+  updateQuantity: (skuId: string, quantity: number) => void;
   clearCart: () => void;
   subtotal: number;
   itemCount: number;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
-const STORAGE_KEY = "murrelet-cart";
+// Bumped from "murrelet-cart": the old shape keyed on (id, size) and has no
+// colour, so a stale cart would render blank colours and unresolvable SKUs.
+// A new key drops those carts on the floor rather than half-reading them.
+const STORAGE_KEY = "murrelet-cart-v2";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -47,29 +52,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   function addItem(item: Omit<CartItem, "quantity">, quantity = 1) {
     setItems((prev) => {
-      const existing = prev.find((i) => i.id === item.id && i.size === item.size);
+      const existing = prev.find((i) => i.skuId === item.skuId);
       if (existing) {
         return prev.map((i) =>
-          i.id === item.id && i.size === item.size
-            ? { ...i, quantity: i.quantity + quantity }
-            : i
+          i.skuId === item.skuId ? { ...i, quantity: i.quantity + quantity } : i
         );
       }
       return [...prev, { ...item, quantity }];
     });
   }
 
-  function removeItem(id: string, size: string) {
-    setItems((prev) => prev.filter((i) => !(i.id === id && i.size === size)));
+  function removeItem(skuId: string) {
+    setItems((prev) => prev.filter((i) => i.skuId !== skuId));
   }
 
-  function updateQuantity(id: string, size: string, quantity: number) {
+  function updateQuantity(skuId: string, quantity: number) {
     if (quantity <= 0) {
-      removeItem(id, size);
+      removeItem(skuId);
       return;
     }
     setItems((prev) =>
-      prev.map((i) => (i.id === id && i.size === size ? { ...i, quantity } : i))
+      prev.map((i) => (i.skuId === skuId ? { ...i, quantity } : i))
     );
   }
 

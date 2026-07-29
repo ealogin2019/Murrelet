@@ -16,27 +16,13 @@ export type HeroSlide = {
 
 export const seedHeroSlides: HeroSlide[] = [
   {
-    id: "hero-1",
-    image: "/images/hero/hero-1.png",
-    eyebrow: "New season",
-    heading: "Quiet essentials.",
-    subheading: "Soft neutrals, considered fits, made to last.",
-    focus: "top",
-  },
-  {
-    id: "hero-2",
-    image: "/images/hero/hero-2.png",
-    eyebrow: "Hoodies & jumpers",
-    heading: "Layer up.",
-    subheading: "Heavyweight fleece and knit, built for cool days.",
-    focus: "top",
-  },
-  {
-    id: "hero-3",
-    image: "/images/hero/hero-3.png",
-    eyebrow: "Everyday denim",
-    heading: "Fits that move with you.",
-    subheading: "Considered denim, made for daily wear.",
+    id: "hero-linen",
+    image: "/images/catalog/linen-shirt-light-blue.jpg",
+    eyebrow: "Summer 26",
+    heading: "Linen weather.",
+    subheading:
+      "Shirts, polos and cotton shorts cut for long lunches and longer evenings.",
+    // Portrait source cropped into a wide banner — hold the upper body.
     focus: "top",
   },
 ];

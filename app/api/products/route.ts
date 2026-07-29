@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getProducts } from "@/lib/blob-store";
+import { getCatalog } from "@/lib/blob-store";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const products = await getProducts();
+  const products = await getCatalog();
   return NextResponse.json({ products });
 }

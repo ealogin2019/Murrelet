@@ -5,8 +5,9 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Murrelet — T-Shirts, Jeans, Hoodies & Jumpers",
-  description: "Small-batch essentials: t-shirts, jeans, hoodies and jumpers.",
+  title: "Murrelet — Shirts, Polos & Shorts",
+  description:
+    "Considered warm-weather essentials: linen shirts, polo shirts and cotton shorts. Free standard delivery over £100.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

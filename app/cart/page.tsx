@@ -4,14 +4,18 @@ import { useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/format";
 
-const FREE_SHIPPING_THRESHOLD = 7500; // cents
+// Pence. Must stay in step with app/api/checkout/route.ts, which is what
+// actually charges — this figure is only an estimate shown in the bag.
+const FREE_SHIPPING_THRESHOLD = 10000;
+const STANDARD_SHIPPING = 495;
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, subtotal } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const shippingEstimate = items.length === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 500;
+  const shippingEstimate =
+    items.length === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : STANDARD_SHIPPING;
 
   async function handleCheckout() {
     setLoading(true);
@@ -49,36 +53,34 @@ export default function CartPage() {
 
   return (
     <div className="wrap cart-page">
-      <h1>Your Cart</h1>
+      <h1>Shopping Bag</h1>
 
       {items.map((item) => (
-        <div className="cart-row" key={`${item.id}-${item.size}`}>
-          <img
-            src={item.image}
-            alt={item.name}
-            onError={(e) => {
-              const img = e.currentTarget;
-              if (img.src.indexOf(item.fallbackImage) === -1) {
-                img.src = item.fallbackImage;
-              }
-            }}
-          />
+        <div className="cart-row" key={item.skuId}>
+          <img src={item.image} alt={`${item.name} — ${item.colour}`} />
           <div>
             <p className="cart-row-name">{item.name}</p>
+            <p className="cart-row-meta">Colour: {item.colour}</p>
             <p className="cart-row-meta">Size: {item.size}</p>
             <p className="cart-row-meta">{formatPrice(item.price)}</p>
           </div>
           <div className="qty-control">
-            <button onClick={() => updateQuantity(item.id, item.size, item.quantity - 1)}>
+            <button
+              aria-label="Decrease quantity"
+              onClick={() => updateQuantity(item.skuId, item.quantity - 1)}
+            >
               −
             </button>
             <span>{item.quantity}</span>
-            <button onClick={() => updateQuantity(item.id, item.size, item.quantity + 1)}>
+            <button
+              aria-label="Increase quantity"
+              onClick={() => updateQuantity(item.skuId, item.quantity + 1)}
+            >
               +
             </button>
           </div>
           <div>{formatPrice(item.price * item.quantity)}</div>
-          <button className="remove-btn" onClick={() => removeItem(item.id, item.size)}>
+          <button className="remove-btn" onClick={() => removeItem(item.skuId)}>
             Remove
           </button>
         </div>
