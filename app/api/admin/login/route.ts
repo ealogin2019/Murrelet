@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   // Rate limit before touching the password, so an attacker cannot use
   // response timing to tell a throttled attempt from a wrong one.
   const key = clientKey(req);
-  const limit = checkRateLimit(key);
+  const limit = await checkRateLimit(key);
   if (!limit.allowed) {
     return NextResponse.json(
       { error: "Too many attempts. Try again later." },
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Incorrect password." }, { status: 401 });
   }
 
-  clearRateLimit(key);
+  await clearRateLimit(key);
   const token = await createSessionToken();
   const res = NextResponse.json({ ok: true });
   res.cookies.set(ADMIN_COOKIE, token, {
