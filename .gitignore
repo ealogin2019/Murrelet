@@ -9,3 +9,6 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# TypeScript incremental build artifact
+tsconfig.tsbuildinfo
