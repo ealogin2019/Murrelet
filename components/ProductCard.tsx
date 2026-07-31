@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Product, Variant, lowestOverride, categoryLabels } from "@/lib/catalog";
 import { formatPrice } from "@/lib/format";
+import VariantImage from "@/components/VariantImage";
 
 /** How many swatches fit in the rail before it collapses to a "+n" counter. */
 const VISIBLE_SWATCHES = 5;
@@ -41,10 +42,22 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const href = `/product/${product.slug}?colour=${active.id}`;
 
+  function step(delta: number) {
+    const i = product.variants.indexOf(active);
+    const next = (i + delta + product.variants.length) % product.variants.length;
+    setActive(product.variants[next]);
+  }
+
   return (
     <div className="card">
       <Link href={href} className="card-image" aria-label={product.name}>
-        <img src={active.images[0]} alt={`${product.name} — ${active.colour}`} />
+        <VariantImage
+          src={active.images[0]}
+          alt={`${product.name} — ${active.colour}`}
+          colourLabel={active.colour}
+          onNext={product.variants.length > 1 ? () => step(1) : undefined}
+          onPrev={product.variants.length > 1 ? () => step(-1) : undefined}
+        />
         {product.badges[0] && <span className="card-badge">{product.badges[0]}</span>}
       </Link>
 

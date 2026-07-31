@@ -12,6 +12,7 @@ import {
 } from "@/lib/catalog";
 import { formatPrice } from "@/lib/format";
 import { useCart } from "@/lib/cart-context";
+import VariantImage from "@/components/VariantImage";
 
 export default function ProductDetail({
   product,
@@ -36,6 +37,12 @@ export default function ProductDetail({
   const price = useMemo(() => variantPrice(product, variant), [product, variant]);
   const sku: Sku | undefined = variant.skus.find((s) => s.id === sizeId);
   const from = lowestOverride(product);
+
+  function stepColour(delta: number) {
+    const i = product.variants.indexOf(variant);
+    const next = (i + delta + product.variants.length) % product.variants.length;
+    setVariantId(product.variants[next].id);
+  }
 
   function handleAddToBag() {
     if (!sku) return;
@@ -67,15 +74,23 @@ export default function ProductDetail({
 
       <div className="product-detail">
         <div className="product-gallery">
-          {variant.images.map((src, i) => (
+          {/* The lead shot swaps colour in place — swipe it on a phone, or
+              use the swatches. Any further shots of this colour stack below
+              and simply re-render when the colour changes. */}
+          <div className="product-image">
+            <VariantImage
+              src={variant.images[0]}
+              alt={`${product.name} — ${variant.colour}`}
+              colourLabel={variant.colour}
+              showLabel
+              eager
+              onNext={product.variants.length > 1 ? () => stepColour(1) : undefined}
+              onPrev={product.variants.length > 1 ? () => stepColour(-1) : undefined}
+            />
+          </div>
+          {variant.images.slice(1).map((src) => (
             <div className="product-image" key={src}>
-              <img
-                src={src}
-                alt={`${product.name} — ${variant.colour}`}
-                // The first image is above the fold on every PDP; the rest
-                // are not, and there may eventually be many of them.
-                loading={i === 0 ? "eager" : "lazy"}
-              />
+              <img src={src} alt={`${product.name} — ${variant.colour}`} loading="lazy" />
             </div>
           ))}
         </div>
