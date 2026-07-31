@@ -1,0 +1,75 @@
+{
+  "_readme": [
+    "The catalog you edit by hand. Photography is NOT listed here — it is",
+    "discovered from public/images/catalog/<slug>/<colour-folder>/.",
+    "",
+    "To add a colour: add an entry below and create the matching folder.",
+    "To add more shots of a colour: drop 2.jpg, 3.jpg ... into its folder.",
+    "Then run: npm run catalog:sync",
+    "",
+    "price is in PENCE and lives on the product. A colour's optional price is",
+    "an OVERRIDE that must be lower — it drives 'Selected colours from £x'.",
+    "swatch is required. Leave it out and the sync refuses to write, but",
+    "prints a colour sampled from the photo as a starting suggestion — check",
+    "it against the garment before pasting it in, the sampler is rough."
+  ],
+  "products": [
+    {
+      "slug": "custom-fit-linen-shirt",
+      "name": "Custom Fit Linen Shirt",
+      "category": "shirts",
+      "price": 8900,
+      "badges": ["NEW ARRIVAL"],
+      "description": "Cut from a breathable pure linen that softens with every wear. A relaxed collar and a single chest pocket keep it easy — the shirt for long lunches and longer evenings.",
+      "details": ["100% linen", "Custom fit", "Spread collar, chest pocket", "Machine wash cold"],
+      "sizes": ["XS", "S", "M", "L", "XL", "XXL"],
+      "colours": [
+        { "folder": "light-blue", "name": "Light Blue", "swatch": "#A8C4DC" },
+        { "folder": "white", "name": "White", "swatch": "#F2F0EB", "price": 6500 }
+      ]
+    },
+    {
+      "slug": "plain-short-sleeve-shirt",
+      "name": "Plain Short Sleeve Shirt",
+      "category": "shirts",
+      "price": 7500,
+      "badges": [],
+      "description": "A plain-woven short sleeve shirt with a clean, unfussy line. No logo, no hardware — just a well-cut collar and a hem that sits right untucked.",
+      "details": ["Linen-cotton blend", "Regular fit", "Camp collar, chest pocket", "Machine wash cold"],
+      "sizes": ["XS", "S", "M", "L", "XL", "XXL"],
+      "colours": [
+        { "folder": "black", "name": "Black", "swatch": "#1A1A1A" },
+        { "folder": "tobacco", "name": "Tobacco", "swatch": "#7A4A22" }
+      ]
+    },
+    {
+      "slug": "classic-cotton-shorts",
+      "name": "22.5 cm Classic Cotton Shorts",
+      "category": "shorts",
+      "price": 5500,
+      "badges": ["BESTSELLER"],
+      "description": "A 22.5 cm inseam in a garment-dyed cotton twill that holds its colour. Slanted hip pockets, a flat front, and enough room to actually sit down in.",
+      "details": ["100% cotton twill", "22.5 cm inseam", "Flat front, slant pockets", "Machine wash cold"],
+      "sizes": ["XS", "S", "M", "L", "XL", "XXL"],
+      "colours": [
+        { "folder": "meadow-green", "name": "Meadow Green", "swatch": "#9BCB8E", "price": 3900 },
+        { "folder": "black", "name": "Black", "swatch": "#1A1A1A" }
+      ]
+    },
+    {
+      "slug": "casual-polo-shirt",
+      "name": "Casual Polo Shirt",
+      "category": "polo-shirts",
+      "price": 9500,
+      "badges": ["TRENDING"],
+      "description": "An everyday layer in a soft brushed cotton. Wear it open over a tee or buttoned on its own — it takes a crease well and loses it just as easily.",
+      "details": ["Brushed cotton", "Regular fit", "Button front, ribbed cuffs", "Machine wash cold"],
+      "sizes": ["XS", "S", "M", "L", "XL", "XXL"],
+      "colours": [
+        { "folder": "chambray", "name": "Chambray", "swatch": "#7FA0C4" },
+        { "folder": "white", "name": "White", "swatch": "#F2F0EB" },
+        { "folder": "violet", "name": "Violet", "swatch": "#5B4BA8", "price": 7000 }
+      ]
+    }
+  ]
+}

@@ -124,6 +124,21 @@ export async function saveCatalogToDb(products: Product[]): Promise<void> {
     p.variants.flatMap((v) => v.skus.map((s) => s.id))
   );
 
+  // Upsert resolves conflicts on the primary key, but `slug` carries its own
+  // unique constraint. If a product keeps its slug and changes its id, the
+  // insert collides on slug instead of updating. Clear exactly those rows
+  // first — same slug, different id — and nothing else.
+  if (keepProducts.length) {
+    const slugs = products.map((p) => `"${p.slug}"`).join(",");
+    const ids = keepProducts.map((id) => `"${id}"`).join(",");
+    const { error } = await db
+      .from("products")
+      .delete()
+      .filter("slug", "in", `(${slugs})`)
+      .filter("id", "not.in", `(${ids})`);
+    if (error) throw new Error(`Failed to clear renamed products: ${error.message}`);
+  }
+
   const { error: pErr } = await db.from("products").upsert(
     products.map((p, i) => ({
       id: p.id,
