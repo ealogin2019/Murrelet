@@ -17,7 +17,7 @@ export type HeroSlide = {
 export const seedHeroSlides: HeroSlide[] = [
   {
     id: "hero-linen",
-    image: "/images/catalog/linen-shirt-light-blue.jpg",
+    image: "/images/catalog/custom-fit-linen-shirt/light-blue/1.jpg",
     eyebrow: "Summer 26",
     heading: "Linen weather.",
     subheading:
