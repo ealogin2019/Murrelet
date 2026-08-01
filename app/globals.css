@@ -1165,7 +1165,9 @@ img {
 .footer-inner {
   display: flex;
   align-items: center;
-  gap: 20px;
+  flex-wrap: wrap;
+  gap: 20px 32px;
+  padding: 32px 24px;
 }
 
 .footer-mark {
@@ -1176,14 +1178,42 @@ img {
   opacity: 0.85;
 }
 
-@media (max-width: 560px) {
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  /* Pushes the legal block to the far right on wide screens; both sit under
+     the mark once they wrap. */
+  margin-right: auto;
+}
+
+.footer-links a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.footer-legal {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.footer-legal p {
+  margin: 0 0 4px;
+}
+
+@media (max-width: 640px) {
   .footer-inner {
     flex-direction: column;
     align-items: flex-start;
-    gap: 14px;
+    gap: 16px;
   }
   .footer-mark {
     height: 44px;
+  }
+  .footer-links {
+    margin-right: 0;
   }
 }
 
@@ -1413,4 +1443,80 @@ img {
 @media (prefers-reduced-motion: reduce) {
   .variant-image-layer { transition: none; }
   .variant-image-label { animation: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Info pages (shipping/returns, privacy, terms, contact)
+   --------------------------------------------------------------------------- */
+.info-page {
+  max-width: 760px;
+  padding: 40px 24px 96px;
+}
+
+.info-page h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 2.1rem;
+  margin: 6px 0 4px;
+}
+
+.info-updated {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin: 0 0 32px;
+}
+
+.info-prose h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.25rem;
+  margin: 36px 0 12px;
+}
+
+.info-prose h2:first-child {
+  margin-top: 0;
+}
+
+.info-prose p {
+  color: var(--ink);
+  line-height: 1.65;
+  margin: 0 0 14px;
+}
+
+.info-prose ul {
+  margin: 0 0 14px;
+  padding-left: 20px;
+  line-height: 1.65;
+}
+
+.info-prose a {
+  text-decoration: underline;
+}
+
+.info-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4px 0 20px;
+}
+
+.info-table td {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.92rem;
+}
+
+.info-table td:last-child {
+  text-align: right;
+  color: var(--muted);
+}
+
+/* Marks copy that asserts something we don't actually have yet (a company
+   number, a support inbox) — visible in the running app, not just in code,
+   so a placeholder can't accidentally ship as if it were real. */
+.placeholder-flag {
+  background: var(--card-bg);
+  border-left: 3px solid var(--sale);
+  padding: 12px 14px;
+  font-size: 0.85rem;
+  color: var(--muted);
 }

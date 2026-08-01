@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export default function Footer() {
@@ -13,7 +14,15 @@ export default function Footer() {
             fine enough to fill in below ~40px, and the footer can give it
             room. The header carries the wordmark instead. */}
         <img className="footer-mark" src="/brand/logo-mark.png" alt="" aria-hidden="true" />
-        <div>
+
+        <nav className="footer-links" aria-label="Policies">
+          <Link href="/shipping-returns">Shipping &amp; Returns</Link>
+          <Link href="/privacy">Privacy Policy</Link>
+          <Link href="/terms">Terms of Service</Link>
+          <Link href="/contact">Contact</Link>
+        </nav>
+
+        <div className="footer-legal">
           <p>&copy; {new Date().getFullYear()} Murrelet. All rights reserved.</p>
           <p>Free standard delivery over £100 · Returns accepted within 14 days.</p>
         </div>
