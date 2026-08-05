@@ -48,35 +48,43 @@ export default function Header() {
     <>
       <header className="site-header">
         <div className="wrap header-row">
-          <button
-            type="button"
-            className="menu-btn"
-            aria-label={open ? "Close menu" : "Open menu"}
-            aria-expanded={open}
-            aria-controls="nav-panel"
-            onClick={() => setOpen((v) => !v)}
-          >
-            <span className="menu-icon" aria-hidden="true">
-              <span />
-              <span />
-            </span>
-            <span className="menu-btn-label">Menu</span>
-          </button>
-
           <Link href="/" className="logo" aria-label="Murrelet — home">
             <img src="/brand/logo-wordmark.png" alt="Murrelet" />
           </Link>
 
-          {/* Centred on the row itself, so it stays optically centred no
-              matter how wide the wordmark or the actions get. */}
-          <Link href="/" className="header-mark" tabIndex={-1} aria-hidden="true">
-            <img src="/brand/logo-mark.png" alt="" />
-          </Link>
+          {/* Inline at desktop widths, where three short words fit next to
+              the wordmark with room to spare — no drawer needed there. */}
+          <nav className="dnav" aria-label="Categories">
+            {categories.map((c) => (
+              <Link key={c} href={`/?category=${c}`}>
+                {categoryLabels[c]}
+              </Link>
+            ))}
+          </nav>
 
-          <Link href="/cart" className="cart-link">
-            Bag
-            {itemCount > 0 && <span className="cart-count">{itemCount}</span>}
-          </Link>
+          <div className="header-actions">
+            <Link href="/cart" className="icon-btn" aria-label={`Bag${itemCount ? `, ${itemCount} items` : ""}`}>
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M5.5 7h9l-.6 9.5a1 1 0 0 1-1 .9H7.1a1 1 0 0 1-1-.9L5.5 7Z" />
+                <path d="M7.5 7V5.2a2.5 2.5 0 0 1 5 0V7" />
+              </svg>
+              {itemCount > 0 && <span className="badge">{itemCount}</span>}
+            </Link>
+
+            {/* Mobile-only: opens the drawer instead of the inline nav above. */}
+            <button
+              type="button"
+              className="icon-btn menu-btn"
+              aria-label={open ? "Close menu" : "Open menu"}
+              aria-expanded={open}
+              aria-controls="nav-panel"
+              onClick={() => setOpen((v) => !v)}
+            >
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M3 6h14M3 10h14M3 14h14" />
+              </svg>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -92,26 +100,39 @@ export default function Header() {
         aria-label="Categories"
         ref={panelRef}
       >
-        <button
-          type="button"
-          className="nav-close"
-          aria-label="Close menu"
-          onClick={() => setOpen(false)}
-        >
-          ×
-        </button>
+        <div className="nav-panel-top">
+          <img className="wordmark" src="/brand/logo-wordmark.png" alt="Murrelet" />
+          <button
+            type="button"
+            className="nav-close"
+            aria-label="Close menu"
+            onClick={() => setOpen(false)}
+          >
+            ×
+          </button>
+        </div>
 
         <p className="eyebrow nav-panel-label">Shop</p>
         <ul className="nav-list">
           <li>
-            <Link href="/">All</Link>
+            <Link href="/">
+              All<span className="chev" aria-hidden="true">›</span>
+            </Link>
           </li>
           {categories.map((c) => (
             <li key={c}>
-              <Link href={`/?category=${c}`}>{categoryLabels[c]}</Link>
+              <Link href={`/?category=${c}`}>
+                {categoryLabels[c]}
+                <span className="chev" aria-hidden="true">›</span>
+              </Link>
             </li>
           ))}
         </ul>
+
+        <div className="nav-quick">
+          <Link href="/shipping-returns">Shipping &amp; Returns</Link>
+          <Link href="/contact">Contact</Link>
+        </div>
 
         <div className="nav-panel-foot">
           <img src="/brand/logo-mark.png" alt="" aria-hidden="true" />

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Product, Variant, categories, categoryLabels } from "@/lib/catalog";
+import { Product, Variant, Sku, categories, categoryLabels, swatchPalette } from "@/lib/catalog";
 import { HeroSlide } from "@/lib/hero";
 import { formatPrice } from "@/lib/format";
 
@@ -66,17 +66,22 @@ export default function AdminPage() {
     );
   }
 
-  function newVariant(productId: string, colour = "New colour"): Variant {
+  function newVariant(productId: string, sizes: string[], colour = swatchPalette[0].name): Variant {
     const id = `${productId}-${slugify(colour)}-${Math.floor(Math.random() * 1000)}`;
+    const swatch = swatchPalette.find((s) => s.name === colour)?.hex ?? swatchPalette[0].hex;
     return {
       id,
       colour,
-      swatch: "#cccccc",
+      swatch,
       price: null,
       images: [],
       // Every colour needs a size run — the API rejects a variant with none.
-      skus: DEFAULT_SIZES.map((size) => ({
-        id: `${id}-${size.toLowerCase()}`,
+      // Sizes are inherited from the product's existing colours (or the
+      // XS-XXL default for a brand new one) rather than a fixed list, so a
+      // Kids product's age-based run isn't silently overwritten when a
+      // second colour is added.
+      skus: sizes.map((size) => ({
+        id: `${id}-${slugify(size)}`,
         size,
         inStock: true,
         stock: null,
@@ -84,11 +89,46 @@ export default function AdminPage() {
     };
   }
 
+  /** The size run shared by a product's existing colours, or the default for a new one. */
+  function currentSizes(product: Product): string[] {
+    return product.variants[0]?.skus.map((s) => s.size) ?? DEFAULT_SIZES;
+  }
+
   function addVariant(productId: string) {
     setProducts((prev) =>
       prev.map((p) =>
-        p.id === productId ? { ...p, variants: [...p.variants, newVariant(productId)] } : p
+        p.id === productId
+          ? { ...p, variants: [...p.variants, newVariant(productId, currentSizes(p))] }
+          : p
       )
+    );
+  }
+
+  /**
+   * Rebuilds every colour's size run to match a new comma-separated list.
+   * Sizes that still exist keep their sku id and in-stock state; new ones are
+   * added in-stock. This is what makes the "Sizes" field apply to the whole
+   * product at once instead of one colour at a time.
+   */
+  function updateProductSizes(productId: string, raw: string) {
+    const sizes = raw.split(",").map((s) => s.trim()).filter(Boolean);
+    if (sizes.length === 0) return;
+    setProducts((prev) =>
+      prev.map((p) => {
+        if (p.id !== productId) return p;
+        return {
+          ...p,
+          variants: p.variants.map((v) => {
+            const bySize = new Map(v.skus.map((s) => [s.size, s]));
+            const skus: Sku[] = sizes.map((size) => {
+              const existing = bySize.get(size);
+              if (existing) return existing;
+              return { id: `${v.id}-${slugify(size)}`, size, inStock: true, stock: null };
+            });
+            return { ...v, skus };
+          }),
+        };
+      })
     );
   }
 
@@ -116,12 +156,12 @@ export default function AdminPage() {
       id,
       slug: slugify(`new-product-${Date.now()}`),
       name: "New product",
-      category: "shirts",
+      category: "men",
       price: 0,
       description: "",
       details: [],
       badges: [],
-      variants: [newVariant(id, "Default")],
+      variants: [newVariant(id, DEFAULT_SIZES)],
     };
     setProducts((prev) => [p, ...prev]);
   }
@@ -141,16 +181,47 @@ export default function AdminPage() {
     return data.url;
   }
 
-  async function handleVariantImage(productId: string, variantId: string, file: File) {
+  // Both go through the functional setProducts form, reading prior state at
+  // apply-time rather than from a closed-over `products` snapshot — several
+  // photos can upload concurrently and must not clobber one another
+  // regardless of which network request finishes first.
+  function appendVariantImage(productId: string, variantId: string, url: string) {
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === productId
+          ? {
+              ...p,
+              variants: p.variants.map((v) =>
+                v.id === variantId ? { ...v, images: [...v.images, url] } : v
+              ),
+            }
+          : p
+      )
+    );
+  }
+
+  function removeVariantImage(productId: string, variantId: string, index: number) {
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === productId
+          ? {
+              ...p,
+              variants: p.variants.map((v) =>
+                v.id === variantId
+                  ? { ...v, images: v.images.filter((_, i) => i !== index) }
+                  : v
+              ),
+            }
+          : p
+      )
+    );
+  }
+
+  async function handleVariantImageAdd(productId: string, variantId: string, file: File) {
     setError(null);
     try {
       const url = await uploadFile(file, "products");
-      // Photography belongs to a colour, not a product — replace the first
-      // image of this variant and leave any others alone.
-      const product = products.find((p) => p.id === productId);
-      const variant = product?.variants.find((v) => v.id === variantId);
-      const rest = variant ? variant.images.slice(1) : [];
-      updateVariant(productId, variantId, { images: [url, ...rest] });
+      appendVariantImage(productId, variantId, url);
     } catch (err: any) {
       setError(err.message || "Upload failed.");
     }
@@ -347,6 +418,13 @@ export default function AdminPage() {
                         }
                         placeholder="Badges (comma separated)"
                       />
+                      <input
+                        className="admin-input"
+                        key={`${p.id}-sizes-${p.variants[0]?.skus.length}`}
+                        defaultValue={currentSizes(p).join(", ")}
+                        onBlur={(e) => updateProductSizes(p.id, e.target.value)}
+                        placeholder="Sizes, e.g. XS, S, M, L or 2-3Y, 4-5Y, 6-7Y"
+                      />
                     </div>
                     <textarea
                       className="admin-input"
@@ -365,62 +443,86 @@ export default function AdminPage() {
                       </p>
                       {p.variants.map((v) => (
                         <div className="admin-variant" key={v.id}>
-                          <label className="admin-swatch-thumb">
-                            <img
-                              src={v.images[0] || "/images/fallback.svg"}
-                              alt=""
-                              onError={(e) => {
-                                e.currentTarget.src = "/images/fallback.svg";
-                              }}
-                            />
-                            <span>Change</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              hidden
+                          <div className="admin-variant-row">
+                            <select
+                              className="admin-input"
+                              value={v.colour}
                               onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleVariantImage(p.id, v.id, file);
+                                const swatch = swatchPalette.find((s) => s.name === e.target.value);
+                                if (swatch) {
+                                  updateVariant(p.id, v.id, { colour: swatch.name, swatch: swatch.hex });
+                                }
                               }}
+                              aria-label="Colour"
+                            >
+                              {swatchPalette.map((s) => (
+                                <option key={s.name} value={s.name}>
+                                  {s.name}
+                                </option>
+                              ))}
+                            </select>
+                            <span
+                              className="admin-swatch-preview"
+                              style={{ background: v.swatch }}
+                              aria-hidden="true"
                             />
-                          </label>
-                          <input
-                            className="admin-input"
-                            value={v.colour}
-                            onChange={(e) =>
-                              updateVariant(p.id, v.id, { colour: e.target.value })
-                            }
-                            placeholder="Colour name"
-                          />
-                          <input
-                            className="admin-input admin-input-swatch"
-                            type="color"
-                            value={v.swatch}
-                            onChange={(e) =>
-                              updateVariant(p.id, v.id, { swatch: e.target.value })
-                            }
-                            aria-label={`${v.colour} swatch colour`}
-                          />
-                          <input
-                            className="admin-input"
-                            type="number"
-                            step="0.01"
-                            value={v.price == null ? "" : (v.price / 100).toFixed(2)}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              updateVariant(p.id, v.id, {
-                                // Empty means "inherit", which is null — not 0.
-                                price: raw === "" ? null : Math.round(parseFloat(raw) * 100),
-                              });
-                            }}
-                            placeholder="Override"
-                          />
-                          <button
-                            className="admin-delete"
-                            onClick={() => deleteVariant(p.id, v.id)}
-                          >
-                            Remove
-                          </button>
+                            <input
+                              className="admin-input"
+                              type="number"
+                              step="0.01"
+                              value={v.price == null ? "" : (v.price / 100).toFixed(2)}
+                              onChange={(e) => {
+                                const raw = e.target.value;
+                                updateVariant(p.id, v.id, {
+                                  // Empty means "inherit", which is null — not 0.
+                                  price: raw === "" ? null : Math.round(parseFloat(raw) * 100),
+                                });
+                              }}
+                              placeholder="Override"
+                            />
+                            <button
+                              className="admin-delete"
+                              onClick={() => deleteVariant(p.id, v.id)}
+                            >
+                              Remove
+                            </button>
+                          </div>
+
+                          <div className="admin-image-strip">
+                            {v.images.map((img, i) => (
+                              <div className="admin-image-thumb" key={img + i}>
+                                <img
+                                  src={img}
+                                  alt=""
+                                  onError={(e) => {
+                                    e.currentTarget.src = "/images/fallback.svg";
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  className="admin-image-remove"
+                                  aria-label={`Remove photo ${i + 1} of ${v.colour}`}
+                                  onClick={() => removeVariantImage(p.id, v.id, i)}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                            <label className="admin-image-add">
+                              +
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                hidden
+                                onChange={(e) => {
+                                  const files = Array.from(e.target.files ?? []);
+                                  files.forEach((file) => handleVariantImageAdd(p.id, v.id, file));
+                                  e.target.value = "";
+                                }}
+                              />
+                            </label>
+                          </div>
                         </div>
                       ))}
                       <button className="admin-btn" onClick={() => addVariant(p.id)}>

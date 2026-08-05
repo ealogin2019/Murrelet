@@ -44,14 +44,34 @@ export type Product = {
   variants: Variant[];
 };
 
-export const categories = ["shirts", "polo-shirts", "shorts"] as const;
+export const categories = ["men", "women", "kids"] as const;
 export type Category = (typeof categories)[number];
 
 export const categoryLabels: Record<Category, string> = {
-  shirts: "Shirts",
-  "polo-shirts": "Polo Shirts",
-  shorts: "Shorts",
+  men: "Men",
+  women: "Women",
+  kids: "Kids",
 };
+
+/**
+ * The fixed colour set admin picks from — a name always carries the same
+ * hex, so "not manual" means literally that: no freeform hex entry, no two
+ * products drifting to slightly different blues. Add to this list rather
+ * than letting admin type a custom value; keeping it closed is the point.
+ */
+export const swatchPalette = [
+  { name: "White", hex: "#F5F4F1" },
+  { name: "Black", hex: "#1A1A1A" },
+  { name: "Navy Blue", hex: "#0B1F3A" },
+  { name: "Royal Blue", hex: "#1E4FBA" },
+  { name: "Light Blue", hex: "#A8C4DC" },
+  { name: "Maroon", hex: "#6E1F2A" },
+  { name: "Light Grey", hex: "#C7C5C0" },
+  { name: "Dark Grey", hex: "#5B5A56" },
+  { name: "Dark Brown", hex: "#4A3123" },
+  { name: "Beige", hex: "#D8CBB3" },
+] as const;
+export type SwatchName = (typeof swatchPalette)[number]["name"];
 
 const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
@@ -72,7 +92,7 @@ export const seedCatalog: Product[] = [
     id: "linen-shirt",
     slug: "custom-fit-linen-shirt",
     name: "Custom Fit Linen Shirt",
-    category: "shirts",
+    category: "men",
     description:
       "Cut from a breathable pure linen that softens with every wear. A relaxed collar and a single chest pocket keep it easy — the shirt for long lunches and longer evenings.",
     details: [
@@ -106,7 +126,7 @@ export const seedCatalog: Product[] = [
     id: "plain-shirt",
     slug: "plain-short-sleeve-shirt",
     name: "Plain Short Sleeve Shirt",
-    category: "shirts",
+    category: "men",
     description:
       "A plain-woven short sleeve shirt with a clean, unfussy line. No logo, no hardware — just a well-cut collar and a hem that sits right untucked.",
     details: [
@@ -140,7 +160,7 @@ export const seedCatalog: Product[] = [
     id: "cotton-shorts",
     slug: "classic-cotton-shorts",
     name: "22.5 cm Classic Cotton Shorts",
-    category: "shorts",
+    category: "men",
     description:
       "A 22.5 cm inseam in a garment-dyed cotton twill that holds its colour. Slanted hip pockets, a flat front, and enough room to actually sit down in.",
     details: [
@@ -174,7 +194,7 @@ export const seedCatalog: Product[] = [
     id: "polo-shirt",
     slug: "casual-polo-shirt",
     name: "Casual Polo Shirt",
-    category: "polo-shirts",
+    category: "men",
     description:
       "An everyday layer in a soft brushed cotton. Wear it open over a tee or buttoned on its own — it takes a crease well and loses it just as easily.",
     details: [
