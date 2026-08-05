@@ -1563,3 +1563,36 @@ img {
   font-size: 0.85rem;
   color: var(--muted);
 }
+
+/* Slug field — the auto-generated timestamp id was never meant to be a
+   permanent public URL, so it needs to be visible and editable. */
+.admin-slug-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.admin-slug-prefix {
+  font-size: 0.78rem;
+  color: var(--muted);
+  flex: none;
+}
+
+.admin-slug-regen {
+  flex: none;
+  background: none;
+  border: 1px solid var(--line);
+  padding: 7px 10px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-no-photo {
+  flex-basis: 100%;
+  font-size: 0.76rem;
+  color: var(--sale);
+  align-self: center;
+}

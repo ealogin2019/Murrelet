@@ -379,6 +379,31 @@ export default function AdminPage() {
                       onChange={(e) => updateProduct(p.id, { name: e.target.value })}
                       placeholder="Product name"
                     />
+                    <div className="admin-slug-row">
+                      <span className="admin-slug-prefix">/product/</span>
+                      <input
+                        className="admin-input"
+                        key={`${p.id}-slug-${p.slug}`}
+                        defaultValue={p.slug}
+                        onBlur={(e) => {
+                          const next = slugify(e.target.value);
+                          if (next) updateProduct(p.id, { slug: next });
+                        }}
+                        placeholder="url-slug"
+                        aria-label="URL slug"
+                      />
+                      <button
+                        type="button"
+                        className="admin-slug-regen"
+                        title="Set the URL from the product name"
+                        onClick={() => {
+                          const next = slugify(p.name);
+                          if (next) updateProduct(p.id, { slug: next });
+                        }}
+                      >
+                        ↻ from name
+                      </button>
+                    </div>
                     <div className="admin-fields-row">
                       <select
                         className="admin-input"
@@ -522,6 +547,9 @@ export default function AdminPage() {
                                 }}
                               />
                             </label>
+                            {v.images.length === 0 && (
+                              <span className="admin-no-photo">No photo yet — saving is blocked until this colour has one</span>
+                            )}
                           </div>
                         </div>
                       ))}

@@ -43,6 +43,14 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
+      // A colour with no photo renders as a broken image on the live site —
+      // reject at save time rather than let that reach a shopper.
+      if (!Array.isArray(v.images) || v.images.length === 0) {
+        return NextResponse.json(
+          { error: `"${v.colour}" on "${p.name}" has no photo yet. Add at least one before saving.` },
+          { status: 400 }
+        );
+      }
       if (v.price != null && (typeof v.price !== "number" || v.price < 0)) {
         return NextResponse.json(
           { error: `Colour "${v.colour}" on "${p.name}" has an invalid price override.` },
