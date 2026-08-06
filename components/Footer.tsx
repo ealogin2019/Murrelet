@@ -16,6 +16,8 @@ export default function Footer() {
         <img className="footer-mark" src="/brand/logo-mark.png" alt="" aria-hidden="true" />
 
         <nav className="footer-links" aria-label="Policies">
+          <Link href="/about">About</Link>
+          <Link href="/size-guide">Size Guide</Link>
           <Link href="/shipping-returns">Shipping &amp; Returns</Link>
           <Link href="/privacy">Privacy Policy</Link>
           <Link href="/terms">Terms of Service</Link>

@@ -143,7 +143,17 @@ export default function ProductDetail({
             ))}
           </div>
 
-          <span className="size-label">Size</span>
+          <div className="size-label-row">
+            <span className="size-label">Size</span>
+            <Link
+              href="/size-guide"
+              className="size-guide-link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Size guide
+            </Link>
+          </div>
           <div className="size-grid">
             {variant.skus.map((s) => (
               <button

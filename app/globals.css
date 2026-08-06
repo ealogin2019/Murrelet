@@ -340,6 +340,21 @@ img {
   display: block;
 }
 
+/* Wraps the Size label + guide link only — .size-label itself stays block,
+   since it's shared with the plain "Colour: White" label above, and a text
+   node plus a <strong> inside a flex container would split apart under
+   justify-content instead of reading as one line. */
+.size-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.size-label-row .size-label {
+  margin-bottom: 0;
+}
+
 .size-grid {
   display: flex;
   gap: 8px;
@@ -1877,5 +1892,106 @@ img {
 @media (max-width: 560px) {
   .close-facts {
     text-align: left;
+  }
+}
+
+/* Size guide link, inline within .size-label (defined earlier). */
+.size-guide-link {
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--navy);
+  border-bottom: 1px solid var(--navy);
+  padding-bottom: 1px;
+  font-weight: 400;
+}
+
+/* Size guide table — a proper header row, unlike the simple key/value
+   .info-table rows used elsewhere on the info pages. */
+.size-table thead th {
+  text-align: left;
+  font-size: 0.66rem;
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.size-table thead th:not(:first-child),
+.size-table td:not(:first-child) {
+  text-align: right;
+}
+
+.size-table td:last-child {
+  color: var(--ink);
+}
+
+/* About page */
+.about-photo {
+  width: 100%;
+  aspect-ratio: 16/10;
+  object-fit: cover;
+  object-position: 50% 20%;
+  margin: 4px 0 28px;
+}
+
+/* Cookie banner */
+.cookie-banner {
+  position: fixed;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  z-index: 30;
+  max-width: 640px;
+  margin: 0 auto;
+  background: var(--ink);
+  color: #fff;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.cookie-banner p {
+  flex: 1;
+  min-width: 220px;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.cookie-banner a {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.cookie-accept {
+  flex: none;
+  background: #fff;
+  color: var(--ink);
+  border: none;
+  padding: 10px 20px;
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+@media (max-width: 560px) {
+  .cookie-banner {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+  .cookie-accept {
+    width: 100%;
   }
 }
