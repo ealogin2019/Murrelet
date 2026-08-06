@@ -597,6 +597,27 @@ img {
   border-radius: 2px;
   font-size: 0.85rem;
   margin-bottom: 18px;
+  /* Stays on screen while editing a long product list, rather than
+     scrolling out of view right after the save it's explaining. */
+  position: sticky;
+  top: 12px;
+  z-index: 5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Flashes the exact colour row a blocked save points at, so the fix is
+   "look here" rather than "reread the banner and hunt for it". */
+.admin-variant-flash {
+  animation: admin-variant-flash 1.6s ease;
+}
+
+@keyframes admin-variant-flash {
+  0%, 100% { background: transparent; }
+  15%, 60% { background: #fbeaea; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-variant-flash { animation: none; }
 }
 
 .admin-banner.is-ok {

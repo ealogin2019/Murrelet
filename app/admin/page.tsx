@@ -228,9 +228,31 @@ export default function AdminPage() {
   }
 
   async function saveProducts() {
-    setSaving(true);
     setStatus(null);
     setError(null);
+
+    // Mirror the server's photo check before spending a round trip on it.
+    // "Save changes" saves every product in one request — a single colour
+    // missing a photo used to fail that whole batch with only a banner as
+    // the signal, which could silently drop edits made to OTHER products in
+    // the same pass. Catching it here means the failure points at the exact
+    // row instead of a generic error, and never reaches the network with
+    // nothing to show for it.
+    for (const p of products) {
+      const bareVariant = p.variants.find((v) => v.images.length === 0);
+      if (bareVariant) {
+        setError(
+          `"${bareVariant.colour}" on "${p.name}" has no photo yet — add one before saving. Nothing was saved, including any other changes in this batch.`
+        );
+        const row = document.getElementById(`variant-${bareVariant.id}`);
+        row?.scrollIntoView({ behavior: "smooth", block: "center" });
+        row?.classList.add("admin-variant-flash");
+        setTimeout(() => row?.classList.remove("admin-variant-flash"), 1600);
+        return;
+      }
+    }
+
+    setSaving(true);
     try {
       const res = await fetch("/api/admin/products", {
         method: "POST",
@@ -467,7 +489,7 @@ export default function AdminPage() {
                         Colours — leave a price blank to use the list price
                       </p>
                       {p.variants.map((v) => (
-                        <div className="admin-variant" key={v.id}>
+                        <div className="admin-variant" key={v.id} id={`variant-${v.id}`}>
                           <div className="admin-variant-row">
                             <select
                               className="admin-input"
