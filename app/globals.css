@@ -223,31 +223,16 @@ img {
   }
 }
 
-/* Filters */
-.filters {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 36px 0 8px;
+/* Category / shop listing pages */
+.listing {
+  padding-top: 40px;
 }
 
-.filter-btn {
-  border: 1px solid var(--line);
-  background: transparent;
-  padding: 8px 18px;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  color: var(--muted);
-}
-
-.filter-btn.active {
-  background: var(--navy);
-  color: var(--accent-contrast);
-  border-color: var(--navy);
+.listing h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+  margin: 8px 0 0;
 }
 
 /* Product grid */
@@ -1088,61 +1073,95 @@ img {
   cursor: pointer;
 }
 
-/* Full-bleed hero */
+/* Asymmetric split hero — copy on a plain field, photo standing free beside
+   it. No gradient scrim: the text never sits over the photograph, so
+   nothing needs to fight it for legibility. */
 .hero-full {
-  position: relative;
-  height: min(78vh, 720px);
-  min-height: 420px;
-  overflow: hidden;
-  background: var(--card-bg);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+  min-height: 640px;
+  border-bottom: 1px solid var(--line);
 }
 
-.hero-full-image {
-  position: absolute;
-  inset: 0;
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 40px clamp(40px, 6vw, 96px) 40px 40px;
+}
+
+.hero-copy .eyebrow {
+  margin-bottom: 20px;
+}
+
+.hero-copy h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  margin: 0 0 22px;
+  font-size: clamp(3rem, 5.4vw, 5.2rem);
+  line-height: 0.98;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.hero-sub {
+  font-size: 1.02rem;
+  line-height: 1.65;
+  color: var(--muted);
+  max-width: 42ch;
+  margin: 0 0 30px;
+}
+
+.hero-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--navy);
+  font-weight: 600;
+  width: fit-content;
+  border-bottom: 1px solid var(--navy);
+  padding-bottom: 3px;
+}
+
+.hero-link svg {
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.4;
+}
+
+.hero-photo {
+  position: relative;
+  overflow: hidden;
+  background: var(--card-bg);
+  min-height: 360px;
+}
+
+.hero-photo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 20%;
+  object-position: 50% 15%;
 }
 
-.hero-full-image.focus-center { object-position: 50% 50%; }
-.hero-full-image.focus-bottom { object-position: 50% 85%; }
+.hero-photo img.focus-center { object-position: 50% 50%; }
+.hero-photo img.focus-bottom { object-position: 50% 85%; }
 
-/* Weighted to the bottom so the copy stays legible without dimming the
-   whole photograph. */
-.hero-full-scrim {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.45) 100%);
-}
-
-.hero-full-content {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 48px;
-  color: #fff;
-}
-
-.hero-full-content .hero-eyebrow {
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 12px;
-}
-
-.hero-full-content h1 {
-  font-family: var(--serif);
-  font-weight: 500;
-  font-size: clamp(2.2rem, 5vw, 3.6rem);
-  margin: 0 0 10px;
-  color: #fff;
-}
-
-.hero-full-sub {
-  color: rgba(255, 255, 255, 0.9);
-  max-width: 44ch;
-  margin: 0;
-  font-size: 0.98rem;
+@media (max-width: 900px) {
+  .hero-full {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+  .hero-photo {
+    height: 420px;
+    order: -1;
+  }
+  .hero-copy {
+    padding: 40px;
+  }
 }
 
 /* The value in "Colour: White" is a proper noun, not a micro-label. */
@@ -1272,7 +1291,8 @@ img {
   color: var(--muted);
 }
 
-.dnav a:hover {
+.dnav a:hover,
+.dnav a.is-active {
   color: var(--ink);
 }
 
@@ -1616,4 +1636,246 @@ img {
   font-size: 0.76rem;
   color: var(--sale);
   align-self: center;
+}
+
+/* ---------------------------------------------------------------------------
+   Category chapters — three photographic entry points on the homepage,
+   replacing the old ALL/MEN/WOMEN/KIDS filter pills.
+   --------------------------------------------------------------------------- */
+.chapters {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.chapter {
+  position: relative;
+  display: block;
+  height: 460px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.chapter img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chapter.is-placeholder {
+  background: var(--card-bg);
+  display: flex;
+  align-items: flex-end;
+}
+
+.chapter-scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.4) 100%);
+}
+
+.chapter-label {
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  bottom: 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.chapter-label h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.9rem;
+  color: #fff;
+  margin: 0;
+}
+
+.chapter-label svg {
+  width: 22px;
+  height: 22px;
+  stroke: #fff;
+  fill: none;
+  stroke-width: 1.3;
+}
+
+.chapter.is-placeholder .chapter-label {
+  position: static;
+  padding: 28px;
+}
+
+.chapter.is-placeholder .chapter-label h2 {
+  color: var(--ink);
+}
+
+.chapter.is-placeholder .chapter-label svg {
+  stroke: var(--ink);
+  opacity: 0.35;
+}
+
+.chapter-soon {
+  font-size: 0.68rem;
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-top: 6px;
+}
+
+@media (max-width: 900px) {
+  .chapters {
+    grid-template-columns: 1fr;
+  }
+  .chapter {
+    height: 340px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   New arrivals — homepage-only featured grid. The 2x2 "piece of the edit"
+   card and the trailing "more" tile only appear when there are exactly 4
+   products shown (see NewArrivals.tsx for why); category/shop listing pages
+   use the plain .grid instead and never set featured.
+   --------------------------------------------------------------------------- */
+.shop-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 64px 0 28px;
+  border-bottom: 1px solid var(--line);
+}
+
+.shop-head a {
+  font-size: 0.78rem;
+  color: var(--navy);
+  border-bottom: 1px solid var(--navy);
+  padding-bottom: 2px;
+}
+
+.pgrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 44px 36px;
+  padding: 40px 0 88px;
+}
+
+.card-featured {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.card-featured .card-name {
+  font-size: 1.6rem;
+  max-width: 22ch;
+}
+
+.card-desc {
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 40ch;
+  margin: 2px 0 10px;
+}
+
+.card-featured .card-price {
+  font-size: 0.92rem;
+}
+
+.pcard-more {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  padding: 32px;
+  min-height: 100%;
+}
+
+.pcard-more h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.3rem;
+  margin: 0;
+  max-width: 14ch;
+}
+
+.pcard-more .hero-link {
+  font-size: 0.76rem;
+}
+
+@media (max-width: 900px) {
+  .pgrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px 24px;
+  }
+  .card-featured {
+    grid-column: span 1;
+    grid-row: span 1;
+  }
+  .card-featured .card-name {
+    font-size: 0.98rem;
+  }
+  .card-desc {
+    display: none;
+  }
+  .pcard-more {
+    grid-column: span 2;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Closing band — a deliberate end to the homepage rather than trailing
+   straight from the grid into the footer.
+   --------------------------------------------------------------------------- */
+.close-band {
+  background: var(--navy);
+  color: #fff;
+}
+
+.close-band-inner {
+  padding: 78px 40px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.close-band h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  margin: 0;
+  max-width: 20ch;
+  text-wrap: balance;
+  color: #fff;
+}
+
+.close-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: right;
+}
+
+.close-facts span {
+  font-size: 0.7rem;
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+@media (max-width: 560px) {
+  .close-facts {
+    text-align: left;
+  }
 }

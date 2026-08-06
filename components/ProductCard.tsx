@@ -9,7 +9,15 @@ import VariantImage from "@/components/VariantImage";
 /** How many swatches fit in the rail before it collapses to a "+n" counter. */
 const VISIBLE_SWATCHES = 5;
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({
+  product,
+  featured = false,
+}: {
+  product: Product;
+  /** The homepage's 2x2 "piece of the edit" treatment. Only meaningful
+   * inside .pgrid — see NewArrivals for why it's only ever true there. */
+  featured?: boolean;
+}) {
   const [active, setActive] = useState<Variant>(product.variants[0]);
   const from = lowestOverride(product);
 
@@ -49,7 +57,7 @@ export default function ProductCard({ product }: { product: Product }) {
   }
 
   return (
-    <div className="card">
+    <div className={`card ${featured ? "card-featured" : ""}`}>
       <Link href={href} className="card-image" aria-label={product.name}>
         <VariantImage
           src={active.images[0]}
@@ -83,6 +91,9 @@ export default function ProductCard({ product }: { product: Product }) {
       <Link href={href} className="card-text">
         <p className="card-category">{categoryLabels[product.category]}</p>
         <p className="card-name">{product.name}</p>
+        {featured && product.description && (
+          <p className="card-desc">{product.description}</p>
+        )}
         <p className="card-price">
           {formatPrice(product.price)}
           {from !== null && (

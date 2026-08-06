@@ -56,7 +56,11 @@ export default function Header() {
               the wordmark with room to spare — no drawer needed there. */}
           <nav className="dnav" aria-label="Categories">
             {categories.map((c) => (
-              <Link key={c} href={`/?category=${c}`}>
+              <Link
+                key={c}
+                href={`/${c}`}
+                className={pathname === `/${c}` ? "is-active" : ""}
+              >
                 {categoryLabels[c]}
               </Link>
             ))}
@@ -121,7 +125,7 @@ export default function Header() {
           </li>
           {categories.map((c) => (
             <li key={c}>
-              <Link href={`/?category=${c}`}>
+              <Link href={`/${c}`}>
                 {categoryLabels[c]}
                 <span className="chev" aria-hidden="true">›</span>
               </Link>

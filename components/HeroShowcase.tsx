@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { HeroSlide, seedHeroSlides } from "@/lib/hero";
 
 /**
- * Full-bleed single image with the copy set over its lower third — the
- * reference's move, and the one that makes the photography do the work.
- * Slides beyond the first are ignored here by design; HeroCarousel is still
- * available if a rotating hero is wanted later.
+ * Asymmetric split hero — copy on its own field, photo standing free beside
+ * it. Deliberately not a gradient-scrim-over-full-bleed-photo: that pattern
+ * is the single most common (and most dated-feeling) e-commerce hero, and it
+ * also fights photography like this that doesn't need help reading through
+ * a dark overlay.
  */
 export default function HeroShowcase() {
   const [slides, setSlides] = useState<HeroSlide[]>(seedHeroSlides);
@@ -30,18 +31,25 @@ export default function HeroShowcase() {
 
   return (
     <section className="hero-full">
-      <img
-        className={`hero-full-image focus-${slide.focus || "top"}`}
-        src={slide.image}
-        alt={slide.heading || ""}
-        // Always the largest above-the-fold asset — never lazy.
-        loading="eager"
-      />
-      <div className="hero-full-scrim" />
-      <div className="wrap hero-full-content">
-        {slide.eyebrow && <p className="hero-eyebrow">{slide.eyebrow}</p>}
+      <div className="hero-copy">
+        {slide.eyebrow && <p className="eyebrow">{slide.eyebrow}</p>}
         {slide.heading && <h1>{slide.heading}</h1>}
-        {slide.subheading && <p className="hero-full-sub">{slide.subheading}</p>}
+        {slide.subheading && <p className="hero-sub">{slide.subheading}</p>}
+        <a className="hero-link" href="#new-arrivals">
+          Shop the edit
+          <svg width="14" height="14" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M4 10h12M11 5l5 5-5 5" />
+          </svg>
+        </a>
+      </div>
+      <div className="hero-photo">
+        <img
+          className={`focus-${slide.focus || "top"}`}
+          src={slide.image}
+          alt={slide.heading || ""}
+          // Always the largest above-the-fold asset — never lazy.
+          loading="eager"
+        />
       </div>
     </section>
   );
