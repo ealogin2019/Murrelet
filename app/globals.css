@@ -1995,3 +1995,43 @@ img {
     width: 100%;
   }
 }
+
+/* Two-axis product listing filters (/shop, and /men /women /kids which
+   redirect there). Deliberately plain chip rows, not the pill-button look
+   the old single-axis filters used — two rows of pills read as busier than
+   this needs to be. */
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 18px 0 0;
+}
+
+.filter-row-label {
+  font-size: 0.68rem;
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--muted);
+  width: 44px;
+  flex: none;
+}
+
+.filter-chip {
+  border: 1px solid var(--line);
+  background: transparent;
+  padding: 6px 14px;
+  font-size: 0.76rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.filter-chip.is-active {
+  border-color: var(--navy);
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.listing-count {
+  margin: 20px 0 0;
+}

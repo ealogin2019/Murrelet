@@ -55,12 +55,13 @@ export default function Header() {
           {/* Inline at desktop widths, where three short words fit next to
               the wordmark with room to spare — no drawer needed there. */}
           <nav className="dnav" aria-label="Categories">
+            {/* Gender is one of two filters on /shop now, not its own
+                section — linking straight there (skipping the /men redirect
+                hop) pre-selects it, but there's no single pathname left to
+                highlight as "active" the way there was when /men was its
+                own page. */}
             {categories.map((c) => (
-              <Link
-                key={c}
-                href={`/${c}`}
-                className={pathname === `/${c}` ? "is-active" : ""}
-              >
+              <Link key={c} href={`/shop?category=${c}`}>
                 {categoryLabels[c]}
               </Link>
             ))}
@@ -119,13 +120,13 @@ export default function Header() {
         <p className="eyebrow nav-panel-label">Shop</p>
         <ul className="nav-list">
           <li>
-            <Link href="/">
+            <Link href="/shop">
               All<span className="chev" aria-hidden="true">›</span>
             </Link>
           </li>
           {categories.map((c) => (
             <li key={c}>
-              <Link href={`/${c}`}>
+              <Link href={`/shop?category=${c}`}>
                 {categoryLabels[c]}
                 <span className="chev" aria-hidden="true">›</span>
               </Link>

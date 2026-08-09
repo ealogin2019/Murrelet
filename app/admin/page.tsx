@@ -2,11 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Product, Variant, Sku, categories, categoryLabels, swatchPalette } from "@/lib/catalog";
+import {
+  Product,
+  Variant,
+  Sku,
+  categories,
+  categoryLabels,
+  productTypes,
+  productTypeLabels,
+  swatchPalette,
+} from "@/lib/catalog";
 import { HeroSlide } from "@/lib/hero";
 import { formatPrice } from "@/lib/format";
 
 const CATEGORIES = categories;
+const PRODUCT_TYPES = productTypes;
 const DEFAULT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
 function slugify(str: string) {
@@ -157,6 +167,7 @@ export default function AdminPage() {
       slug: slugify(`new-product-${Date.now()}`),
       name: "New product",
       category: "men",
+      type: null,
       price: 0,
       description: "",
       details: [],
@@ -437,6 +448,22 @@ export default function AdminPage() {
                         {CATEGORIES.map((c) => (
                           <option key={c} value={c}>
                             {categoryLabels[c]}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        className="admin-input"
+                        value={p.type ?? ""}
+                        onChange={(e) =>
+                          updateProduct(p.id, {
+                            type: (e.target.value || null) as Product["type"],
+                          })
+                        }
+                      >
+                        <option value="">Type &mdash; not set</option>
+                        {PRODUCT_TYPES.map((t) => (
+                          <option key={t} value={t}>
+                            {productTypeLabels[t]}
                           </option>
                         ))}
                       </select>

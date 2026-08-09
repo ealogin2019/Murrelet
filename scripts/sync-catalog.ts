@@ -185,6 +185,11 @@ async function build(): Promise<Product[]> {
       slug: p.slug,
       name: p.name,
       category: p.category,
+      // This JSON+filesystem path is retired in favour of authoring
+      // everything through /admin. Not worth adding a "type" field to the
+      // legacy JSON schema for a script that's no longer how products get
+      // added — admin is where "type" actually gets set.
+      type: null,
       description: p.description ?? "",
       details: p.details ?? [],
       badges: p.badges ?? [],

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCatalog, saveCatalog } from "@/lib/catalog-store";
-import { Product } from "@/lib/catalog";
+import { Product, productTypes } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +27,15 @@ export async function POST(req: NextRequest) {
     if (!p.id || !p.slug || !p.name || typeof p.price !== "number") {
       return NextResponse.json(
         { error: `Product "${p.name || p.id || "unknown"}" is missing required fields.` },
+        { status: 400 }
+      );
+    }
+    // type is optional (null = not yet categorised) but if set must be a
+    // real value — otherwise a typo silently drops a product out of every
+    // type filter with no error to explain why.
+    if (p.type != null && !(productTypes as readonly string[]).includes(p.type)) {
+      return NextResponse.json(
+        { error: `Product "${p.name}" has an unrecognised type "${p.type}".` },
         { status: 400 }
       );
     }

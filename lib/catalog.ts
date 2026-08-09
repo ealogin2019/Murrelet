@@ -35,6 +35,8 @@ export type Product = {
   slug: string;
   name: string;
   category: Category;
+  /** Second filter axis — null until admin assigns one. */
+  type: ProductType | null;
   description: string;
   details: string[];
   /** e.g. "NEW ARRIVAL", "BESTSELLER" — rendered as micro-labels. */
@@ -51,6 +53,35 @@ export const categoryLabels: Record<Category, string> = {
   men: "Men",
   women: "Women",
   kids: "Kids",
+};
+
+/**
+ * A second, independent filter axis — what kind of garment, not who it's
+ * for. The hero's category picker sets this; gender (above) stays a
+ * separate, combinable filter on the listing page rather than being
+ * replaced by it. A product can have no type set (not yet categorised) —
+ * it just won't appear in a type-filtered view, same as an uncategorised
+ * product still shows under "all".
+ */
+export const productTypes = [
+  "t-shirts",
+  "hoodies",
+  "sweatshirts",
+  "socks",
+  "trunks-boxers",
+  "jeans",
+  "puffer-jackets",
+] as const;
+export type ProductType = (typeof productTypes)[number];
+
+export const productTypeLabels: Record<ProductType, string> = {
+  "t-shirts": "T-Shirts",
+  hoodies: "Hoodies",
+  sweatshirts: "Sweatshirts",
+  socks: "Socks",
+  "trunks-boxers": "Trunks/Boxers",
+  jeans: "Jeans",
+  "puffer-jackets": "Puffer Jackets",
 };
 
 /**
@@ -93,6 +124,7 @@ export const seedCatalog: Product[] = [
     slug: "custom-fit-linen-shirt",
     name: "Custom Fit Linen Shirt",
     category: "men",
+    type: null,
     description:
       "Cut from a breathable pure linen that softens with every wear. A relaxed collar and a single chest pocket keep it easy — the shirt for long lunches and longer evenings.",
     details: [
@@ -127,6 +159,7 @@ export const seedCatalog: Product[] = [
     slug: "plain-short-sleeve-shirt",
     name: "Plain Short Sleeve Shirt",
     category: "men",
+    type: null,
     description:
       "A plain-woven short sleeve shirt with a clean, unfussy line. No logo, no hardware — just a well-cut collar and a hem that sits right untucked.",
     details: [
@@ -161,6 +194,7 @@ export const seedCatalog: Product[] = [
     slug: "classic-cotton-shorts",
     name: "22.5 cm Classic Cotton Shorts",
     category: "men",
+    type: null,
     description:
       "A 22.5 cm inseam in a garment-dyed cotton twill that holds its colour. Slanted hip pockets, a flat front, and enough room to actually sit down in.",
     details: [
@@ -195,6 +229,7 @@ export const seedCatalog: Product[] = [
     slug: "casual-polo-shirt",
     name: "Casual Polo Shirt",
     category: "men",
+    type: null,
     description:
       "An everyday layer in a soft brushed cotton. Wear it open over a tee or buttoned on its own — it takes a crease well and loses it just as easily.",
     details: [

@@ -7,7 +7,7 @@
 // The DB is snake_case and the app is camelCase — that translation lives here
 // and nowhere else.
 
-import { Product, Variant, Sku, Category, seedCatalog } from "./catalog";
+import { Product, Variant, Sku, Category, ProductType, seedCatalog } from "./catalog";
 import { supabaseAdmin, supabasePublic, supabaseConfigured } from "./supabase";
 
 type ProductRow = {
@@ -15,6 +15,7 @@ type ProductRow = {
   slug: string;
   name: string;
   category: Category;
+  type: ProductType | null;
   description: string;
   details: string[];
   badges: string[];
@@ -42,7 +43,7 @@ type SkuRow = {
 };
 
 const SELECT =
-  "id,slug,name,category,description,details,badges,price,position," +
+  "id,slug,name,category,type,description,details,badges,price,position," +
   "variants(id,colour,swatch,price,images,position," +
   "skus(id,size,in_stock,stock,position))";
 
@@ -72,6 +73,7 @@ function toProduct(row: ProductRow): Product {
     slug: row.slug,
     name: row.name,
     category: row.category,
+    type: row.type,
     description: row.description ?? "",
     details: row.details ?? [],
     badges: row.badges ?? [],
@@ -145,6 +147,7 @@ export async function saveCatalogToDb(products: Product[]): Promise<void> {
       slug: p.slug,
       name: p.name,
       category: p.category,
+      type: p.type,
       description: p.description,
       details: p.details,
       badges: p.badges,
