@@ -11,7 +11,7 @@ const description =
   "Considered warm-weather essentials: linen shirts, polo shirts and cotton shorts. Free standard delivery over £100.";
 // Real product photography, not a placeholder — used whenever a page doesn't
 // set its own OG image (most pages besides individual products).
-const shareImage = "/images/catalog/custom-fit-linen-shirt/light-blue/1.jpg";
+const shareImage = "/images/hero-murrelet.jpg";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

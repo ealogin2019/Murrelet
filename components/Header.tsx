@@ -12,6 +12,28 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
 
+  // The homepage's hero is its own header for the first screen — no bar
+  // stacked above it repeating the wordmark and categories a second time.
+  // This one stays off-screen while the hero is in view and slides down once
+  // it's been scrolled past, so search/cart/menu are never actually gone,
+  // just not needed twice at once. Every other page has no hero above it, so
+  // this just renders normally there — see the early return below.
+  const isHome = pathname === "/";
+  const [floatingVisible, setFloatingVisible] = useState(false);
+
+  useEffect(() => {
+    if (!isHome) return;
+    function update() {
+      const hero = document.getElementById("hero-selector");
+      // No hero found (still mounting, or removed) — fail toward showing the
+      // header rather than stranding the user with no way to navigate.
+      setFloatingVisible(!hero || hero.getBoundingClientRect().bottom < 0);
+    }
+    window.addEventListener("scroll", update, { passive: true });
+    update();
+    return () => window.removeEventListener("scroll", update);
+  }, [isHome]);
+
   // `inert` keeps the closed panel's links out of the tab order and away from
   // screen readers. React 18's types don't know the attribute, so it's set on
   // the node directly rather than as a prop.
@@ -46,7 +68,11 @@ export default function Header() {
 
   return (
     <>
-      <header className="site-header">
+      <header
+        className={`site-header ${isHome ? "site-header-floating" : ""} ${
+          isHome && floatingVisible ? "is-visible" : ""
+        }`}
+      >
         <div className="wrap header-row">
           <Link href="/" className="logo" aria-label="Murrelet — home">
             <img src="/brand/logo-wordmark.png" alt="Murrelet" />
@@ -60,6 +86,9 @@ export default function Header() {
                 hop) pre-selects it, but there's no single pathname left to
                 highlight as "active" the way there was when /men was its
                 own page. */}
+            <Link href="/shop" className={pathname === "/shop" ? "is-active" : ""}>
+              Shop all
+            </Link>
             {categories.map((c) => (
               <Link key={c} href={`/shop?category=${c}`}>
                 {categoryLabels[c]}
@@ -79,15 +108,14 @@ export default function Header() {
             {/* Mobile-only: opens the drawer instead of the inline nav above. */}
             <button
               type="button"
-              className="icon-btn menu-btn"
+              className="menu-btn"
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
               aria-controls="nav-panel"
               onClick={() => setOpen((v) => !v)}
             >
-              <svg viewBox="0 0 20 20" aria-hidden="true">
-                <path d="M3 6h14M3 10h14M3 14h14" />
-              </svg>
+              <span>{open ? "Close" : "Menu"}</span>
+              <i aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -117,13 +145,22 @@ export default function Header() {
           </button>
         </div>
 
-        <p className="eyebrow nav-panel-label">Shop</p>
-        <ul className="nav-list">
+        <p className="eyebrow nav-panel-label">The collection</p>
+        <ul className="nav-primary">
           <li>
             <Link href="/shop">
-              All<span className="chev" aria-hidden="true">›</span>
+              Shop all<span className="chev" aria-hidden="true">↗</span>
             </Link>
           </li>
+          <li>
+            <Link href="/#new-arrivals">
+              New arrivals<span className="chev" aria-hidden="true">↗</span>
+            </Link>
+          </li>
+        </ul>
+
+        <p className="eyebrow nav-panel-label nav-panel-category-label">Shop by category</p>
+        <ul className="nav-list">
           {categories.map((c) => (
             <li key={c}>
               <Link href={`/shop?category=${c}`}>
@@ -133,6 +170,12 @@ export default function Header() {
             </li>
           ))}
         </ul>
+
+        <div className="nav-promo">
+          <p className="eyebrow">Summer / 26</p>
+          <p>Easy layers for the parts of the day that matter.</p>
+          <Link href="/shop">Shop the edit <span aria-hidden="true">→</span></Link>
+        </div>
 
         <div className="nav-quick">
           <Link href="/shipping-returns">Shipping &amp; Returns</Link>

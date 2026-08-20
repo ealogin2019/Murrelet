@@ -116,7 +116,8 @@ function sizeRun(variantId: string, sizes: string[] = SHIRT_SIZES): Sku[] {
   }));
 }
 
-const img = (name: string) => `/images/catalog/${name}.jpg`;
+const img = (product: string, colour: string) =>
+  `/images/catalog/${product}/${colour}/1.jpg`;
 
 export const seedCatalog: Product[] = [
   {
@@ -141,7 +142,7 @@ export const seedCatalog: Product[] = [
         colour: "Light Blue",
         swatch: "#A8C4DC",
         price: null,
-        images: [img("linen-shirt-light-blue")],
+        images: [img("custom-fit-linen-shirt", "light-blue")],
         skus: sizeRun("linen-shirt-light-blue"),
       },
       {
@@ -149,7 +150,7 @@ export const seedCatalog: Product[] = [
         colour: "White",
         swatch: "#F2F0EB",
         price: 6500,
-        images: [img("linen-shirt-white")],
+        images: [img("custom-fit-linen-shirt", "white")],
         skus: sizeRun("linen-shirt-white"),
       },
     ],
@@ -176,7 +177,7 @@ export const seedCatalog: Product[] = [
         colour: "Black",
         swatch: "#1A1A1A",
         price: null,
-        images: [img("plain-shirt-black")],
+        images: [img("plain-short-sleeve-shirt", "black")],
         skus: sizeRun("plain-shirt-black"),
       },
       {
@@ -184,7 +185,7 @@ export const seedCatalog: Product[] = [
         colour: "Tobacco",
         swatch: "#7A4A22",
         price: null,
-        images: [img("plain-shirt-brown")],
+        images: [img("plain-short-sleeve-shirt", "tobacco")],
         skus: sizeRun("plain-shirt-brown"),
       },
     ],
@@ -211,7 +212,7 @@ export const seedCatalog: Product[] = [
         colour: "Meadow Green",
         swatch: "#9BCB8E",
         price: 3900,
-        images: [img("shorts-green")],
+        images: [img("classic-cotton-shorts", "meadow-green")],
         skus: sizeRun("cotton-shorts-green"),
       },
       {
@@ -219,7 +220,7 @@ export const seedCatalog: Product[] = [
         colour: "Black",
         swatch: "#1A1A1A",
         price: null,
-        images: [img("shorts-black")],
+        images: [img("classic-cotton-shorts", "black")],
         skus: sizeRun("cotton-shorts-black"),
       },
     ],
@@ -246,7 +247,7 @@ export const seedCatalog: Product[] = [
         colour: "Chambray",
         swatch: "#7FA0C4",
         price: null,
-        images: [img("polo-shirt-chambray")],
+        images: [img("casual-polo-shirt", "chambray")],
         skus: sizeRun("polo-shirt-chambray"),
       },
       {
@@ -254,7 +255,7 @@ export const seedCatalog: Product[] = [
         colour: "White",
         swatch: "#F2F0EB",
         price: null,
-        images: [img("polo-shirt-white")],
+        images: [img("casual-polo-shirt", "white")],
         skus: sizeRun("polo-shirt-white"),
       },
       {
@@ -262,7 +263,7 @@ export const seedCatalog: Product[] = [
         colour: "Violet",
         swatch: "#5B4BA8",
         price: 7000,
-        images: [img("polo-shirt-purple")],
+        images: [img("casual-polo-shirt", "violet")],
         skus: sizeRun("polo-shirt-purple"),
       },
     ],

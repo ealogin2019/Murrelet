@@ -92,7 +92,18 @@ function toProduct(row: ProductRow): Product {
  */
 export async function getCatalog(): Promise<Product[]> {
   if (!supabaseConfigured()) return seedCatalog;
-  return getCatalogFromDb();
+  try {
+    return await getCatalogFromDb();
+  } catch (error) {
+    // Keep local design and preview work usable when the configured Supabase
+    // project is asleep, unreachable, or temporarily unavailable. Production
+    // still throws so a live store never quietly serves stale seed products.
+    if (process.env.NODE_ENV === "development") {
+      console.warn("Catalog unavailable in development; using seed catalog.", error);
+      return seedCatalog;
+    }
+    throw error;
+  }
 }
 
 export async function saveCatalog(products: Product[]): Promise<void> {
