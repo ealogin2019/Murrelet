@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getOrderBySession } from "@/lib/orders";
 import { formatPrice } from "@/lib/format";
 import ClearCart from "@/components/ClearCart";
+import PendingOrder from "@/components/PendingOrder";
 
 export const dynamic = "force-dynamic";
 
@@ -43,12 +44,7 @@ export default async function SuccessPage({
       <h1>{paid ? "Thank you for your order" : "Order received"}</h1>
       <p className="eyebrow">Order {order.orderNumber}</p>
 
-      {!paid && (
-        <p>
-          We&apos;re still confirming your payment with our provider. This page
-          will show the full confirmation once it clears.
-        </p>
-      )}
+      {!paid && <PendingOrder email={order.email} />}
 
       <div className="order-summary">
         {order.items.map((item) => (
@@ -82,7 +78,7 @@ export default async function SuccessPage({
         )}
       </div>
 
-      {order.email && (
+      {paid && order.email && (
         <p className="cart-row-meta">A confirmation is on its way to {order.email}.</p>
       )}
 
