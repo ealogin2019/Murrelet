@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Product, productTypes, productTypeLabels, ProductType } from "@/lib/catalog";
-import { useCart } from "@/lib/cart-context";
 import VariantImage from "@/components/VariantImage";
 
 // Placeholder stand-ins for real per-type photography that doesn't exist
@@ -29,10 +28,10 @@ function Icon({ path }: { path: string }) {
 }
 
 /**
- * This section is the entire header for its own screen — no separate navbar
- * stacked above it repeating the wordmark and categories a second time.
- * Header.tsx knows to stay off-screen while this is in view and take over
- * once it's scrolled past (see the home-page branch there).
+ * Header.tsx renders on top of this as a fixed, transparent bar (see its
+ * is-transparent/site-header-home classes) and turns solid the moment this
+ * section scrolls out of view — so this component owns the photo and copy
+ * only, not any header chrome of its own.
  *
  * Selecting a type is direct, not a two-step preview-then-confirm: click or
  * tap goes straight to /shop?type=x, matching how a nav menu is expected to
@@ -47,7 +46,6 @@ export default function HeroSelector({
   catalog: Product[];
   fallbackImage: string;
 }) {
-  const { itemCount } = useCart();
   const [hovered, setHovered] = useState<ProductType | null>(null);
 
   // Real photography wins over a placeholder tint the moment it exists.
@@ -66,20 +64,6 @@ export default function HeroSelector({
 
   return (
     <section className="hero-select" id="hero-selector">
-      <div className="hero-topbar">
-        <Link href="/" className="hero-brand" aria-label="Murrelet — home">
-          <img className="mark" src="/brand/logo-mark.png" alt="" />
-          <span className="word">MURRELET</span>
-        </Link>
-        <div className="topbar-icons">
-          <Link href="/shop" className="topbar-shop">Shop</Link>
-          <Link href="/cart" aria-label={`Bag${itemCount ? `, ${itemCount} items` : ""}`}>
-            <Icon path="M5.5 7h9l-.6 9.5a1 1 0 0 1-1 .9H7.1a1 1 0 0 1-1-.9L5.5 7Z M7.5 7V5.2a2.5 2.5 0 0 1 5 0V7" />
-            {itemCount > 0 && <span className="badge">{itemCount}</span>}
-          </Link>
-        </div>
-      </div>
-
       <div className="hero-select-main">
         <div className="hero-select-photo">
           <VariantImage src={photoSrc} alt="" eager />

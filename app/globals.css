@@ -12,6 +12,9 @@
   --accent: var(--navy);
   --accent-contrast: #ffffff;
   --max-width: 1180px;
+  /* Matches .header-row's height — used to keep hero content clear of the
+     fixed, transparent header that now overlays it on the homepage. */
+  --header-h: 72px;
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   /* Wide-tracked uppercase micro-labels carry most of the editorial voice.
      Applied via .eyebrow and the *-label classes rather than ad hoc. */
@@ -67,27 +70,46 @@ img {
   z-index: 10;
 }
 
-/* On the homepage the hero IS the header for the first screen.
-   The sticky bar hides above the viewport and only slides down once
-   the hero has been scrolled past — so the wordmark + nav are never
-   shown twice at once. On every other page the bar renders normally
-   (no floating class is added). */
-.site-header-floating {
+/* On the homepage the header sits ON the hero — fixed, transparent, so the
+   photo runs full-bleed underneath it — and turns solid the instant the
+   hero scrolls out of view (see .is-transparent below and the pastHero
+   scroll check in Header.tsx). Cart/menu are reachable from frame one this
+   way, rather than living in a second topbar that only the hero rendered. */
+.site-header-home {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  /* Start above the viewport */
-  transform: translateY(-100%);
-  transition: transform 0.3s ease;
+  border-bottom-color: transparent;
+  transition: background-color 0.3s ease, backdrop-filter 0.3s ease,
+    border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.site-header-floating.is-visible {
-  transform: translateY(0);
+.site-header-home.is-transparent {
+  background: transparent;
+  /* A hair of blur so busy photo detail doesn't fight the wordmark/icons —
+     the photo stays clearly visible, it just stops competing for focus. */
+  backdrop-filter: blur(2px);
+  box-shadow: none;
+}
+
+/* A gradient behind the transparent header, taller than the header itself
+   and fading out well below it — without the extra reach, the fade was
+   nearly spent by the header's own bottom edge, so the row read as sitting
+   almost directly on the photo with barely any separation. */
+.site-header-home.is-transparent::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: calc(100% + 64px);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.22) 55%, rgba(0, 0, 0, 0) 100%);
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .site-header-floating {
+  .site-header-home {
     transition: none;
   }
 }
@@ -100,7 +122,10 @@ img {
 }
 
 /* Wordmark only in the header — the bird mark's fine counters mud below
-   ~24px, so it's reserved for the footer and favicon. */
+   ~24px, so it's reserved for the footer and favicon. logo-wordmark.png is
+   now a properly re-cropped, genuinely transparent export (re-cut from the
+   Design/logo.png master — the old one baked in an opaque white background),
+   so it can be colour-inverted for the transparent header state below. */
 .logo {
   display: flex;
   align-items: center;
@@ -1517,7 +1542,7 @@ img {
   backdrop-filter: blur(14px);
 }
 
-.site-header-floating.is-visible {
+.site-header-home:not(.is-transparent) {
   box-shadow: 0 7px 20px rgba(4, 30, 66, 0.08);
 }
 
@@ -1565,38 +1590,54 @@ img {
   gap: 20px;
 }
 
+/* Icon-only — matches the weight of .icon-btn beside it rather than being
+   the widest thing in the row, and a "Menu" label was only ever repeating
+   what the icon already said. */
 .menu-btn {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  min-height: 34px;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
   padding: 0;
+  margin-right: -7px;
   border: 0;
   background: none;
   color: var(--ink);
   cursor: pointer;
-  font-size: 0.66rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
 }
 
-.menu-btn i,
-.menu-btn i::after {
-  display: block;
-  width: 15px;
-  height: 1px;
-  background: currentColor;
-  content: "";
+.menu-btn svg {
+  width: 19px;
+  height: 19px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.4;
+  stroke-linecap: round;
 }
 
-.menu-btn i {
-  position: relative;
+/* Transparent header, over the hero photo — logo, nav, icons all flip to
+   white so they read against the image instead of vanishing into it. */
+.site-header-home.is-transparent .logo img {
+  filter: brightness(0) invert(1);
 }
 
-.menu-btn i::after {
-  position: absolute;
-  top: 5px;
-  left: 0;
+.site-header-home.is-transparent .dnav a {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.site-header-home.is-transparent .dnav a::after {
+  background: #fff;
+}
+
+.site-header-home.is-transparent .icon-btn,
+.site-header-home.is-transparent .menu-btn {
+  color: #fff;
+}
+
+.site-header-home.is-transparent .badge {
+  background: #fff;
+  color: var(--navy);
 }
 
 .nav-scrim {
@@ -1741,6 +1782,10 @@ img {
 }
 
 @media (min-width: 768px) {
+  :root {
+    --header-h: 74px;
+  }
+
   .header-row {
     height: 74px;
   }
@@ -1935,12 +1980,15 @@ img {
 }
 
 /* ---------------------------------------------------------------------------
-   Category chapters — three photographic entry points on the homepage,
-   replacing the old ALL/MEN/WOMEN/KIDS filter pills.
+   Category chapters — photographic entry points on the homepage, replacing
+   the old ALL/MEN/WOMEN/KIDS filter pills. Tile count tracks how many
+   categories actually have photography (plus one pooled "coming soon" tile
+   if any don't) via --chapter-count, so the grid stays balanced whether
+   there's one category shot or all three.
    --------------------------------------------------------------------------- */
 .chapters {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(var(--chapter-count, 3), 1fr);
   gap: 1px;
   background: var(--line);
   border-bottom: 1px solid var(--line);
@@ -1958,12 +2006,6 @@ img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.chapter.is-placeholder {
-  background: var(--card-bg);
-  display: flex;
-  align-items: flex-end;
 }
 
 .chapter-scrim {
@@ -2001,35 +2043,125 @@ img {
   stroke-width: 1.3;
 }
 
-.chapter.is-placeholder .chapter-label {
-  position: static;
-  padding: 28px;
+/* The pooled placeholder for categories with no photography yet — same
+   footprint as a real chapter tile, but built from type instead of a photo,
+   so it reads as a deliberate "more is coming" card rather than an empty
+   box. Navy ties it to the close-band and nav-promo elsewhere in the site. */
+.chapter-soon-tile {
+  background: var(--navy);
+  color: #fff;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
 }
 
-.chapter.is-placeholder .chapter-label h2 {
-  color: var(--ink);
+.chapter-soon-tile .eyebrow {
+  color: rgba(255, 255, 255, 0.6);
 }
 
-.chapter.is-placeholder .chapter-label svg {
-  stroke: var(--ink);
-  opacity: 0.35;
+.chapter-soon-tile h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.9rem;
+  margin: 0;
+  color: #fff;
 }
 
-.chapter-soon {
-  font-size: 0.68rem;
-  letter-spacing: var(--track-wide);
-  text-transform: uppercase;
-  color: var(--muted);
-  display: block;
-  margin-top: 6px;
+.chapter-soon-tile ul {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chapter-soon-tile li {
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.chapter-soon-tile a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 0;
+  font-size: 0.95rem;
+}
+
+.chapter-soon-tile a:hover {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.chapter-soon-tile svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.3;
+  opacity: 0.7;
 }
 
 @media (max-width: 900px) {
   .chapters {
     grid-template-columns: 1fr;
   }
-  .chapter {
+  .chapter,
+  .chapter-soon-tile {
     height: 340px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Trust strip — free delivery / returns / secure checkout. Sits between the
+   chapters and the product edit, filling the gap between sections with real
+   reassurance rather than more empty white space.
+   --------------------------------------------------------------------------- */
+.trust-strip {
+  border-bottom: 1px solid var(--line);
+}
+
+.trust-strip-inner {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 24px;
+  padding: 28px 24px;
+}
+
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.trust-item svg {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  stroke: var(--navy);
+  fill: none;
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.trust-item-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.trust-item-detail {
+  font-size: 0.76rem;
+  color: var(--muted);
+  margin: 2px 0 0;
+}
+
+@media (max-width: 700px) {
+  .trust-strip-inner {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 22px 24px;
   }
 }
 
@@ -2060,6 +2192,20 @@ img {
   grid-auto-rows: 1fr;
   gap: 44px 36px;
   padding: 40px 0 88px;
+}
+
+/* 1-3 products, none of them big enough a catalog for the 2x2 featured
+   rhythm — every card goes large instead, so a small edit still reads as
+   curated rather than a sparse leftover grid. */
+.pgrid.is-edit {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  max-width: 900px;
+  gap: 48px 40px;
+}
+
+.pgrid.is-edit .card-featured {
+  grid-column: auto;
+  grid-row: auto;
 }
 
 .card-featured {
@@ -2345,47 +2491,6 @@ img {
   overflow: hidden;
 }
 
-.hero-topbar {
-  min-height: 68px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 clamp(20px, 4vw, 56px);
-  border-bottom: 1px solid rgba(28, 28, 28, 0.12);
-}
-
-.hero-brand,
-.topbar-icons,
-.topbar-icons a {
-  display: flex;
-  align-items: center;
-}
-
-.hero-brand {
-  gap: 10px;
-}
-
-.hero-topbar .mark {
-  width: auto;
-  height: 21px;
-  opacity: 0.9;
-}
-
-.hero-topbar .word {
-  font-size: 0.72rem;
-  letter-spacing: 0.21em;
-  line-height: 1;
-}
-
-.topbar-icons {
-  gap: 20px;
-}
-
-.topbar-icons a {
-  color: var(--ink);
-}
-
-.topbar-icons svg,
 .cat-list svg,
 .hero-select-cta svg {
   width: 20px;
@@ -2397,21 +2502,12 @@ img {
   stroke-linejoin: round;
 }
 
-.topbar-shop {
-  font-size: 0.7rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.topbar-icons .badge {
-  background: var(--navy);
-  color: #fff;
-}
-
+/* Header.tsx's fixed, transparent header sits on top of this — full height,
+   no offset reserved for a topbar, since there isn't one here any more. */
 .hero-select-main {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
-  min-height: calc(100svh - 68px);
+  min-height: 100svh;
 }
 
 .hero-select-photo {
@@ -2452,7 +2548,7 @@ img {
 }
 
 .hero-photo-meta {
-  top: 22px;
+  top: calc(var(--header-h) + 12px);
   display: flex;
   justify-content: space-between;
   font-size: 0.66rem;
@@ -2593,10 +2689,6 @@ img {
 }
 
 @media (max-width: 760px) {
-  .hero-topbar {
-    min-height: 60px;
-  }
-
   .hero-select-main {
     display: block;
     min-height: 0;
@@ -2608,7 +2700,7 @@ img {
   }
 
   .hero-photo-meta {
-    top: 17px;
+    top: calc(var(--header-h) + 8px);
   }
 
   .hero-photo-caption {
@@ -2651,10 +2743,6 @@ img {
 }
 
 @media (max-width: 380px) {
-  .topbar-shop {
-    display: none;
-  }
-
   .hero-select-photo {
     height: 112vw;
   }

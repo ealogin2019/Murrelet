@@ -6,27 +6,31 @@ import ProductCard from "@/components/ProductCard";
  * The featured 2x2 treatment only makes sense with a full set beside it —
  * showing exactly 4, with the first spanning double width/height, always
  * leaves exactly one grid cell over, which is where the "more" tile sits.
- * With fewer than 4 products the catalog isn't full enough yet for that
- * rhythm to read as intentional, so it falls back to a plain even grid
- * instead of forcing a layout the content can't fill.
+ *
+ * Below that count the catalog isn't full enough for that rhythm, but a
+ * plain small-thumbnail grid with only one or two products in it reads as
+ * sparse, not intentional — so 1-3 products get the "edit" treatment
+ * instead: every card large, like a curated pick rather than a half-empty
+ * shelf.
  */
 export default function NewArrivals({ products }: { products: Product[] }) {
   const shown = products.slice(0, 4);
   const featured = shown.length === 4;
+  const isEdit = shown.length > 0 && shown.length < 4;
 
   return (
     <div className="wrap" id="new-arrivals">
       <div className="shop-head">
-        <p className="eyebrow">New arrivals</p>
+        <p className="eyebrow">{isEdit ? "The edit" : "New arrivals"}</p>
         <Link href="/shop">Shop all &rarr;</Link>
       </div>
 
       {shown.length === 0 ? (
         <p className="empty-state">New styles are on the way.</p>
       ) : (
-        <div className="pgrid">
+        <div className={`pgrid ${isEdit ? "is-edit" : ""}`}>
           {shown.map((p, i) => (
-            <ProductCard key={p.id} product={p} featured={featured && i === 0} />
+            <ProductCard key={p.id} product={p} featured={(featured && i === 0) || isEdit} />
           ))}
           {featured && (
             <Link href="/shop" className="pcard-more">

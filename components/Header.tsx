@@ -12,22 +12,24 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
 
-  // The homepage's hero is its own header for the first screen — no bar
-  // stacked above it repeating the wordmark and categories a second time.
-  // This one stays off-screen while the hero is in view and slides down once
-  // it's been scrolled past, so search/cart/menu are never actually gone,
-  // just not needed twice at once. Every other page has no hero above it, so
-  // this just renders normally there — see the early return below.
+  // On the homepage this is the ONLY header — it overlays the hero
+  // transparently (fixed, on top of the photo) and turns solid the moment
+  // the hero scrolls out of view. Cart/menu are reachable from the very
+  // first frame this way, rather than living in a second, separate topbar
+  // that only the hero renders (the old split header had no menu button on
+  // the hero at all — a real dead end for mobile nav until you scrolled).
+  // Every other page has no hero to sit over, so it's just a normal solid,
+  // in-flow sticky bar there.
   const isHome = pathname === "/";
-  const [floatingVisible, setFloatingVisible] = useState(false);
+  const [pastHero, setPastHero] = useState(false);
 
   useEffect(() => {
     if (!isHome) return;
     function update() {
       const hero = document.getElementById("hero-selector");
-      // No hero found (still mounting, or removed) — fail toward showing the
-      // header rather than stranding the user with no way to navigate.
-      setFloatingVisible(!hero || hero.getBoundingClientRect().bottom < 0);
+      // No hero found (still mounting, or removed) — fail toward the solid
+      // header rather than stranding white-on-white text over plain content.
+      setPastHero(!hero || hero.getBoundingClientRect().bottom < 80);
     }
     window.addEventListener("scroll", update, { passive: true });
     update();
@@ -69,8 +71,8 @@ export default function Header() {
   return (
     <>
       <header
-        className={`site-header ${isHome ? "site-header-floating" : ""} ${
-          isHome && floatingVisible ? "is-visible" : ""
+        className={`site-header ${isHome ? "site-header-home" : ""} ${
+          isHome && !pastHero ? "is-transparent" : ""
         }`}
       >
         <div className="wrap header-row">
@@ -105,7 +107,10 @@ export default function Header() {
               {itemCount > 0 && <span className="badge">{itemCount}</span>}
             </Link>
 
-            {/* Mobile-only: opens the drawer instead of the inline nav above. */}
+            {/* Mobile-only: opens the drawer instead of the inline nav above.
+                Icon-only — a text label here just repeated what the icon
+                already says, and this keeps it visually even with the bag
+                icon beside it rather than the widest thing in the row. */}
             <button
               type="button"
               className="menu-btn"
@@ -114,8 +119,13 @@ export default function Header() {
               aria-controls="nav-panel"
               onClick={() => setOpen((v) => !v)}
             >
-              <span>{open ? "Close" : "Menu"}</span>
-              <i aria-hidden="true" />
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                {open ? (
+                  <path d="M5 5l10 10M15 5 5 15" />
+                ) : (
+                  <path d="M3 6h14M3 10h14M3 14h14" />
+                )}
+              </svg>
             </button>
           </div>
         </div>
