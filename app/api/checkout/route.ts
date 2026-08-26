@@ -56,9 +56,25 @@ export async function POST(req: NextRequest) {
           { status: 409 }
         );
       }
+      const label = `${match.product.name} (${match.variant.colour}, ${match.sku.size})`;
+
       if (!match.sku.inStock) {
+        return NextResponse.json({ error: `${label} is out of stock.` }, { status: 409 });
+      }
+
+      // A tracked sku carries a count; an untracked one is showcase mode and
+      // only has the boolean above to go on. This is a courtesy check, not a
+      // reservation: nothing is held until the webhook decrements, so between
+      // here and payment the last one can still go to someone else. It catches
+      // the ordinary case of a bag left open while stock ran out.
+      if (match.sku.stock !== null && match.sku.stock < quantity) {
         return NextResponse.json(
-          { error: `${match.product.name} (${match.variant.colour}, ${match.sku.size}) is out of stock.` },
+          {
+            error:
+              match.sku.stock === 0
+                ? `${label} is out of stock.`
+                : `Only ${match.sku.stock} left of ${label}.`,
+          },
           { status: 409 }
         );
       }

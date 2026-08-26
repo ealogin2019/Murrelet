@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { markOrderPaid } from "@/lib/orders";
+import { decrementStockForOrder, markOrderPaid } from "@/lib/orders";
 
 // The signature is computed over the exact bytes Stripe sent, so the body
 // must be read raw. Any parsing or re-serialising first breaks verification.
@@ -66,6 +66,39 @@ export async function POST(req: NextRequest) {
           ? `Order ${result.orderNumber} marked paid (${session.id}).`
           : `Duplicate or unknown session, no change (${session.id}).`
       );
+
+      // Inventory moves once, on the delivery that actually made the
+      // pending -> paid transition. Retries report updated: false and skip it.
+      if (result.updated && result.orderId) {
+        try {
+          const moved = await decrementStockForOrder(result.orderId);
+          for (const m of moved) {
+            if (m.remaining === 0) {
+              // Either the last one sold, or more was sold than was held. The
+              // SQL clamps at zero rather than raising, so this line is the
+              // only trace of the difference. Worth a look either way: the
+              // SKU is now off sale.
+              console.warn(
+                `SKU ${m.skuId} hit zero after selling ${m.sold} (order ${result.orderNumber}); now off sale.`
+              );
+            }
+          }
+          if (moved.length) {
+            console.log(`Stock decremented for ${moved.length} tracked sku(s).`);
+          }
+        } catch (stockErr: any) {
+          // Deliberately swallowed. The order IS paid and that transition has
+          // already been written, so a 500 here would have Stripe retry into a
+          // handler that now finds the order settled, reports updated: false,
+          // and skips the decrement anyway. Retrying cannot fix this; it would
+          // only bury a completed payment under failed deliveries. Log loudly
+          // and reconcile by hand.
+          console.error(
+            `PAID BUT STOCK NOT DECREMENTED for order ${result.orderNumber} (${result.orderId}):`,
+            stockErr
+          );
+        }
+      }
     }
 
     return NextResponse.json({ received: true });

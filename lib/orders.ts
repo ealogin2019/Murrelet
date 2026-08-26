@@ -114,7 +114,7 @@ export async function markOrderPaid(
     totalPence: number;
     shippingAddress: unknown;
   }
-): Promise<{ updated: boolean; orderNumber: string | null }> {
+): Promise<{ updated: boolean; orderNumber: string | null; orderId: string | null }> {
   const { data, error } = await supabaseAdmin()
     .from("orders")
     .update({
@@ -127,11 +127,15 @@ export async function markOrderPaid(
     })
     .eq("stripe_session_id", sessionId)
     .eq("status", "pending")
-    .select("order_number");
+    .select("id,order_number");
 
   if (error) throw new Error(`Failed to mark order paid: ${error.message}`);
   const row = data?.[0];
-  return { updated: Boolean(row), orderNumber: row?.order_number ?? null };
+  return {
+    updated: Boolean(row),
+    orderNumber: row?.order_number ?? null,
+    orderId: row?.id ?? null,
+  };
 }
 
 export async function getOrderBySession(sessionId: string): Promise<Order | null> {
@@ -167,4 +171,31 @@ export async function getOrderBySession(sessionId: string): Promise<Order | null
       imageUrl: i.image_url,
     })),
   };
+}
+
+/**
+ * Takes the sold quantities off the tracked SKUs in a paid order.
+ *
+ * Call this only for the webhook delivery that actually moved the order from
+ * pending to paid. markOrderPaid reports that with `updated`, and Stripe's
+ * retries all find the row already paid, so a repeat delivery never reaches
+ * here. That is the whole idempotency story — the SQL function itself has no
+ * memory of having run.
+ *
+ * SKUs with stock = null are untracked and left alone.
+ */
+export async function decrementStockForOrder(
+  orderId: string
+): Promise<{ skuId: string; remaining: number; sold: number }[]> {
+  const { data, error } = await supabaseAdmin().rpc("decrement_stock_for_order", {
+    p_order_id: orderId,
+  });
+
+  if (error) throw new Error(`Failed to decrement stock: ${error.message}`);
+
+  return (data ?? []).map((r: any) => ({
+    skuId: r.sku_id,
+    remaining: r.remaining,
+    sold: r.sold,
+  }));
 }
