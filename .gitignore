@@ -15,3 +15,6 @@ tsconfig.tsbuildinfo
 
 # Supabase CLI scratch state (project ref, pooler URL, versions)
 supabase/.temp/
+
+# Local render of the transactional email, not part of the site.
+email-preview.html

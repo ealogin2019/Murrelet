@@ -30,6 +30,8 @@ export type Order = {
   shippingPence: number;
   totalPence: number | null;
   createdAt: string;
+  /** Whatever Stripe collected at checkout. Shape is Stripe's, not ours. */
+  shippingAddress: unknown;
   items: OrderLine[];
 };
 
@@ -142,7 +144,7 @@ export async function getOrderBySession(sessionId: string): Promise<Order | null
   const { data, error } = await supabaseAdmin()
     .from("orders")
     .select(
-      "id,order_number,email,status,subtotal_pence,shipping_pence,total_pence,created_at," +
+      "id,order_number,email,status,subtotal_pence,shipping_pence,total_pence,created_at,shipping_address," +
         "order_items(sku_id,product_name,colour,size,unit_price_pence,quantity,image_url)"
     )
     .eq("stripe_session_id", sessionId)
@@ -161,6 +163,7 @@ export async function getOrderBySession(sessionId: string): Promise<Order | null
     shippingPence: row.shipping_pence,
     totalPence: row.total_pence,
     createdAt: row.created_at,
+    shippingAddress: row.shipping_address ?? null,
     items: (row.order_items ?? []).map((i: any) => ({
       skuId: i.sku_id,
       productName: i.product_name,

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { decrementStockForOrder, markOrderPaid } from "@/lib/orders";
+import { decrementStockForOrder, getOrderBySession, markOrderPaid } from "@/lib/orders";
+import { orderConfirmation } from "@/lib/emails/order-confirmation";
+import { sendEmail } from "@/lib/email";
 
 // The signature is computed over the exact bytes Stripe sent, so the body
 // must be read raw. Any parsing or re-serialising first breaks verification.
@@ -96,6 +98,34 @@ export async function POST(req: NextRequest) {
           console.error(
             `PAID BUT STOCK NOT DECREMENTED for order ${result.orderNumber} (${result.orderId}):`,
             stockErr
+          );
+        }
+
+        // The confirmation. Sent from here rather than the success page
+        // because the customer may never load that page -- they can close the
+        // tab the moment Stripe redirects, and the receipt still has to go.
+        try {
+          const order = await getOrderBySession(session.id);
+          if (order?.email) {
+            const { subject, html, text } = orderConfirmation(order);
+            const sent = await sendEmail({ to: order.email, subject, html, text });
+            console.log(
+              sent.sent
+                ? `Confirmation sent for ${order.orderNumber} (${sent.id}).`
+                : `Confirmation NOT sent for ${order.orderNumber}: ${sent.reason}.`
+            );
+          } else {
+            console.warn(
+              `No email on order ${result.orderNumber}; no confirmation to send.`
+            );
+          }
+        } catch (mailErr: any) {
+          // Same reasoning as the stock branch: the payment is already
+          // recorded, so a mail failure must not turn into a Stripe retry
+          // loop against a handler that will skip this block next time.
+          console.error(
+            `PAID BUT NO CONFIRMATION SENT for order ${result.orderNumber}:`,
+            mailErr
           );
         }
       }
