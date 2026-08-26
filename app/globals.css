@@ -293,9 +293,9 @@ img {
   padding: 28px 0 64px;
 }
 
-.card {
-  display: block;
-}
+/* .card lives in the "Variant UI" section further down, which redefines
+   display as flex-column. The `display: block` that used to sit here was
+   dead the moment that was written. */
 
 .card-image {
   aspect-ratio: 3 / 4;
@@ -583,6 +583,11 @@ img {
 .status-page p {
   color: var(--muted);
   margin-bottom: 24px;
+  /* Centred text with no measure runs the full page width and stops being
+     readable. Centred copy wants a shorter line than ranged-left does. */
+  max-width: 52ch;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Admin */
@@ -1249,7 +1254,10 @@ img {
 /* Order confirmation */
 .order-summary {
   border-top: 1px solid var(--line);
-  margin: 24px 0;
+  /* auto, not 0: the parent centres inline content with text-align, which
+     does nothing for a block that has a max-width. Without this the summary
+     pins to the left edge while the heading above it sits centred. */
+  margin: 24px auto;
   padding-top: 8px;
   text-align: left;
   max-width: 520px;
@@ -1478,9 +1486,8 @@ img {
   padding: 0;
 }
 
-.nav-panel-label {
-  margin: 0 0 12px;
-}
+/* .nav-panel-label is defined in the "Refined site navigation" section
+   below, which sets both the margin and the colour. */
 
 .nav-list {
   list-style: none;
