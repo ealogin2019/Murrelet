@@ -23,6 +23,22 @@ function from(): string | null {
   return process.env.MAIL_FROM || null;
 }
 
+/**
+ * Where a customer's reply lands.
+ *
+ * Sending runs from a subdomain (send.murrelet.co.uk) so that Resend's SPF
+ * record cannot collide with the one Hostinger already publishes on the root:
+ * a domain may carry only one SPF record, and two is a hard fail that sends
+ * everything to spam. But that subdomain has no mailbox, so without an
+ * explicit reply-to every reply would vanish.
+ *
+ * The receipt tells customers to reply quoting their order number, so this has
+ * to point at a real inbox — orders@murrelet.co.uk, on Hostinger.
+ */
+function defaultReplyTo(): string | null {
+  return process.env.MAIL_REPLY_TO || null;
+}
+
 export async function sendEmail(msg: {
   to: string;
   subject: string;
@@ -63,7 +79,10 @@ export async function sendEmail(msg: {
         // receipt readable in clients that refuse HTML, and its absence is
         // itself a spam signal.
         text: msg.text,
-        ...(msg.replyTo ? { reply_to: msg.replyTo } : {}),
+        // A per-message reply-to wins; MAIL_REPLY_TO is the standing default.
+        ...(msg.replyTo || defaultReplyTo()
+          ? { reply_to: msg.replyTo || defaultReplyTo() }
+          : {}),
       }),
       signal: abort.signal,
     });
