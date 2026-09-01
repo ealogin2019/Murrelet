@@ -1,12 +1,13 @@
 // The one place the site's own absolute URL is decided. Sitemap, robots.txt,
 // and Open Graph tags all need an absolute origin — this is that origin.
 //
-// NEXT_PUBLIC_SITE_URL is meant to hold the real domain once one is attached;
-// until then it falls back to the known Vercel URL rather than localhost, so
-// a production build never emits localhost links into a sitemap search
-// engines actually crawl.
+// The real domain is murrelet.co.uk, registered 2026-09-01. NEXT_PUBLIC_SITE_URL
+// should hold it in every deployed environment; the fallback exists so a build
+// with the variable missing still emits the right absolute URLs into the
+// sitemap, canonical tags and order emails rather than localhost or a
+// vercel.app subdomain that would then need redirecting.
 export const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL?.startsWith("http")
     ? process.env.NEXT_PUBLIC_SITE_URL
-    : "https://murrelet.vercel.app"
+    : "https://murrelet.co.uk"
 ).replace(/\/$/, "");
