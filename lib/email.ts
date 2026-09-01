@@ -26,14 +26,16 @@ function from(): string | null {
 /**
  * Where a customer's reply lands.
  *
- * Sending runs from a subdomain (send.murrelet.co.uk) so that Resend's SPF
- * record cannot collide with the one Hostinger already publishes on the root:
- * a domain may carry only one SPF record, and two is a hard fail that sends
- * everything to spam. But that subdomain has no mailbox, so without an
- * explicit reply-to every reply would vanish.
+ * Sending is verified on the root domain, murrelet.co.uk, which is safe here
+ * because Resend delegates the sending path through CNAMEs (rsend, send)
+ * rather than an SPF include. The envelope sender resolves through those, so
+ * Hostinger's root SPF record is untouched and the mailbox keeps working. An
+ * earlier plan used a sending subdomain to avoid a collision that this setup
+ * never creates.
  *
- * The receipt tells customers to reply quoting their order number, so this has
- * to point at a real inbox — orders@murrelet.co.uk, on Hostinger.
+ * So From can be orders@murrelet.co.uk and replies already reach the Hostinger
+ * mailbox. MAIL_REPLY_TO stays supported for the case where receipts should be
+ * answered somewhere other than the address they were sent from.
  */
 function defaultReplyTo(): string | null {
   return process.env.MAIL_REPLY_TO || null;
