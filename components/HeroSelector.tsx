@@ -69,6 +69,11 @@ export default function HeroSelector({
             carries its own baked-in wordmark and headline, and doubling
             them with live text read as a collage. */}
         <div className="hero-select-photo" id="hero-photo">
+          {/* The poster is 2:3 and this slot is nearer 5:6, so it always
+              crops. Where from is set by object-position in globals.css,
+              measured against the artwork's own text rows rather than by eye:
+              BUILT FOR EVERYDAY ends at row 1270 of 1536, and the crop is
+              placed to keep it — and the model's hair — in frame. */}
           <VariantImage src={photoSrc} alt="" eager />
           <div className="tint" style={{ backgroundColor: tint }} />
         </div>

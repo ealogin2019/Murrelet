@@ -2721,9 +2721,17 @@ img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Keyed to the campaign poster: keeps its baked headline and the model's
-     face in frame as the sides/bottom crop at narrower ratios. */
-  object-position: 50% 28%;
+  /* Keyed to the campaign poster.
+   *
+   * Showing it whole was tried -- contained, over a blurred copy of itself --
+   * and read worse: the poster wants to fill its frame. So it still crops,
+   * and this number decides where from. It is the share of the overflow taken
+   * off the TOP, so raising it slides the window down the poster.
+   *
+   * 28% cut too much off the foot of the frame. 38% keeps the model's hair
+   * clear at the top while giving back about 27px at the bottom on a 1440
+   * screen, where the overflow is 222px. */
+  object-position: 50% 38%;
 }
 
 .hero-select-photo .tint {
@@ -2919,7 +2927,21 @@ img {
 
   .hero-select-photo {
     min-height: 0;
-    height: min(100vw, 590px);
+    /* The poster's own ratio, so on a phone it is not cropped at all.
+     *
+     * At min(100vw, 590px) the frame was 375 x 420 against a 2:3 poster, and
+     * cover discarded a quarter of it -- source rows 148 to 1295 of 1536. That
+     * clipped the top of the model's hair and left BUILT FOR EVERYDAY sitting
+     * 25px off the bottom edge. No object-position fixes that; there simply
+     * was not room for both ends.
+     *
+     * Given the frame the poster's own shape, everything it was designed to
+     * contain is in view, and the header floats over the top of it as it was
+     * meant to. The cap is only a guard for a very short viewport. */
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1024 / 1536;
+    max-height: 82vh;
   }
 
   .hero-photo-meta {
@@ -2970,14 +2992,14 @@ img {
 }
 
 @media (max-width: 380px) {
-  .hero-select-photo {
-    height: 112vw;
-  }
-
+  /* The narrowest phones keep the poster's ratio too. This rule used to force
+     height: 112vw, which on a 375px screen is 420px against a frame that
+     wants 563 -- and being the later, narrower query it quietly overrode the
+     aspect-ratio set above, so the crop came back on exactly the devices the
+     hero matters most on. */
   .hero-select-copy h1 {
     font-size: 3.05rem;
   }
-
 }
 
 @media (prefers-reduced-motion: reduce) {
