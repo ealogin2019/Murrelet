@@ -18,3 +18,8 @@ supabase/.temp/
 
 # Local render of the transactional email, not part of the site.
 email-preview.html
+
+# Catalog backups taken by scripts/graft-catalog.ts before every write.
+# Operational safety net, not source — they hold whatever was live at the
+# time and would go stale in the repository.
+backups/

@@ -72,6 +72,13 @@ function Filters({ products }: { products: Product[] }) {
         ))}
       </div>
 
+      {/* One card per COLOURWAY. Three print treatments of one tee is three
+          cards and reads as an empty shop; the same range as colourways is
+          twenty-seven. Nothing is duplicated to get there — every card links
+          to the same product page with ?colour=, so the customer can still
+          see and compare the whole range in one place. The count below says
+          "styles" against the products, not the cards, because that is what
+          it honestly is. */}
       <p className="eyebrow listing-count">
         {filtered.length} {filtered.length === 1 ? "style" : "styles"}
       </p>
@@ -80,9 +87,11 @@ function Filters({ products }: { products: Product[] }) {
         <p className="empty-state">Nothing matches those filters yet.</p>
       ) : (
         <div className="grid">
-          {filtered.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
+          {filtered.flatMap((p) =>
+            p.variants.map((v) => (
+              <ProductCard key={`${p.id}-${v.id}`} product={p} variant={v} />
+            ))
+          )}
         </div>
       )}
     </>

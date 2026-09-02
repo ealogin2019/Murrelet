@@ -119,7 +119,117 @@ function sizeRun(variantId: string, sizes: string[] = SHIRT_SIZES): Sku[] {
 const img = (product: string, colour: string) =>
   `/images/catalog/${product}/${colour}/1.jpg`;
 
+/**
+ * Image list for a colour rendered by the engine.
+ *
+ * Two files exist per shot: `n.webp` at 1200px for the product page and
+ * `n-sm.webp` at 480px for the listing card. Only the large path is stored —
+ * `cardSrc` below derives the small one — because holding both in the row
+ * would let them drift apart, and the pairing is a fact about how they are
+ * written, not a choice made per product.
+ */
+const shots = (product: string, colour: string, n: number) =>
+  Array.from({ length: n }, (_, i) => `/images/catalog/${product}/${colour}/${i + 1}.webp`);
+
+/**
+ * The 480px card file for a 1200px product-page file.
+ *
+ * A listing showing one card per colourway is 27 images on a single screen.
+ * At product-page size that is several megabytes before anything is clicked;
+ * these are 5–18 KB each.
+ */
+export function cardSrc(src: string): string {
+  return src.endsWith(".webp") ? src.replace(/\.webp$/, "-sm.webp") : src;
+}
+
+/**
+ * SKU id.
+ *
+ *   MUR-TS-LT-BLK-M
+ *       │  │  │   └── size
+ *       │  │  └────── colourway
+ *       │  └───────── print treatment: LT, SL, STL
+ *       └──────────── garment: TS, HD, SW, PF, SK, TR
+ *
+ * Readable in a picking list without decoding, sorts sensibly, and extends to
+ * hoodies and socks without renumbering anything. A purely numeric scheme was
+ * considered and can be carried alongside if an EPOS ever demands digits, but
+ * a code a human can read prevents more errors than it costs.
+ */
+const COLOUR_CODE: Record<string, string> = {
+  Black: "BLK",
+  Brown: "BRN",
+  Burgundy: "BRG",
+  Charcoal: "CHR",
+  "Light Grey": "LGY",
+  Navy: "NVY",
+  Sand: "SND",
+  "Sky Blue": "SKY",
+  White: "WHT",
+};
+
+function skuRun(garment: string, treatment: string, colour: string): Sku[] {
+  const code = COLOUR_CODE[colour] ?? colour.slice(0, 3).toUpperCase();
+  return SHIRT_SIZES.map((size) => ({
+    id: `MUR-${garment}-${treatment}-${code}-${size}`,
+    size,
+    inStock: true,
+    stock: null,
+  }));
+}
+
+/** Colourways of the Large.Text tee, with swatches MEASURED off the
+ *  photography rather than picked from the palette — the 60th to 88th
+ *  luminance percentile of the flat lay, which is the band that reads as the
+ *  colour of the cloth rather than its shadows or its sheen. A chip that does
+ *  not match the garment beside it is the kind of small dishonesty a customer
+ *  notices without being able to say why. */
+const LARGE_TEXT_COLOURS: { colour: string; swatch: string; shots: number }[] = [
+  { colour: "Black", swatch: "#151515", shots: 4 },
+  { colour: "Brown", swatch: "#39251B", shots: 4 },
+  { colour: "Burgundy", swatch: "#601124", shots: 4 },
+  { colour: "Charcoal", swatch: "#36353A", shots: 4 },
+  { colour: "Light Grey", swatch: "#C1C1C1", shots: 3 },
+  { colour: "Navy", swatch: "#18243C", shots: 4 },
+  { colour: "Sand", swatch: "#DDCAB5", shots: 4 },
+  { colour: "Sky Blue", swatch: "#BED3EB", shots: 4 },
+  { colour: "White", swatch: "#F1F0F2", shots: 4 },
+];
+
+const largeTextTee: Product = {
+  id: "large-text-tee",
+  slug: "large-text-tee",
+  name: "Large Text Tee",
+  category: "men",
+  type: "t-shirts",
+  // PROVISIONAL COPY — written to get the product on the page. Every string
+  // in this product is placeholder and is for the designers to replace with
+  // the real description, details and price.
+  description:
+    "The wordmark, set large across the chest. Mid-weight cotton jersey with a "
+    + "set-in sleeve and a ribbed crew that holds its shape. Woven label at the "
+    + "nape. Nine colourways.",
+  details: [
+    "PROVISIONAL — copy and price to be replaced by the design team",
+    "100% cotton jersey",
+    "Regular fit",
+    "Ribbed crew neck, woven neck label",
+    "Machine wash cold, dry flat",
+  ],
+  badges: ["NEW ARRIVAL"],
+  price: 3500,
+  variants: LARGE_TEXT_COLOURS.map(({ colour, swatch, shots: n }) => ({
+    id: `large-text-tee-${colour.toLowerCase().replace(/\s+/g, "-")}`,
+    colour,
+    swatch,
+    price: null,
+    images: shots("large-text-tee", colour.toLowerCase().replace(/\s+/g, "-"), n),
+    skus: skuRun("TS", "LT", colour),
+  })),
+};
+
 export const seedCatalog: Product[] = [
+  largeTextTee,
   {
     id: "linen-shirt",
     slug: "custom-fit-linen-shirt",
