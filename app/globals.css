@@ -2925,19 +2925,26 @@ img {
     min-height: 0;
   }
 
+  /* The hero holds still and the page rides up over it.
+   *
+   * NOT background-attachment: fixed -- iOS Safari ignores it outright, and
+   * that is the device this was asked for. A sticky layer behaves the same
+   * and works everywhere: the poster pins to the top of its own section
+   * while the copy beneath, which is opaque and sits a layer above, slides
+   * across it.
+   *
+   * .hero-select had overflow: hidden, which silently kills sticky on every
+   * descendant by making itself a scroll container. `clip` cuts the same
+   * overflow without becoming one. */
+  .hero-select {
+    overflow: clip;
+  }
+
   .hero-select-photo {
+    position: sticky;
+    top: 0;
+    z-index: 0;
     min-height: 0;
-    /* The poster's own ratio, so on a phone it is not cropped at all.
-     *
-     * At min(100vw, 590px) the frame was 375 x 420 against a 2:3 poster, and
-     * cover discarded a quarter of it -- source rows 148 to 1295 of 1536. That
-     * clipped the top of the model's hair and left BUILT FOR EVERYDAY sitting
-     * 25px off the bottom edge. No object-position fixes that; there simply
-     * was not room for both ends.
-     *
-     * Given the frame the poster's own shape, everything it was designed to
-     * contain is in view, and the header floats over the top of it as it was
-     * meant to. The cap is only a guard for a very short viewport. */
     width: 100%;
     /* Cropped to the owner's sketch rather than shown whole: the full 2:3
      * poster left the trousers and floor filling the lower third and read
@@ -2955,6 +2962,14 @@ img {
     /* 26% of the 107px overflow sits above the frame, putting its top edge at
        source row 77 -- clear of the model's hair, which starts near 150. */
     object-position: 50% 26%;
+  }
+
+  /* The sheet that rides over the poster. It has to be opaque and above, or
+     the hero shows through it as it passes. */
+  .hero-select-text {
+    position: relative;
+    z-index: 1;
+    background: #f2eee7;
   }
 
   .hero-photo-meta {
