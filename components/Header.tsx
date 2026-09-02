@@ -23,13 +23,34 @@ export default function Header() {
   const isHome = pathname === "/";
   const [pastHero, setPastHero] = useState(false);
 
+  // Scrolling down tucks the bar away; any upward scroll brings it straight
+  // back. The content gets the full screen while reading, and the nav is
+  // still one flick away — the standard mobile-commerce header contract.
+  const [hidden, setHidden] = useState(false);
+  const lastY = useRef(0);
+
   useEffect(() => {
-    if (!isHome) return;
     function update() {
-      const hero = document.getElementById("hero-selector");
-      // No hero found (still mounting, or removed) — fail toward the solid
-      // header rather than stranding white-on-white text over plain content.
-      setPastHero(!hero || hero.getBoundingClientRect().bottom < 80);
+      const y = window.scrollY;
+
+      if (isHome) {
+        // Track the hero PHOTO, not the whole hero section — the section's
+        // lower half is paper, and the transparent header's white wordmark
+        // needs the photo (the only full-bleed region) under it to read.
+        // Fail toward the solid header if neither node is found.
+        const hero =
+          document.getElementById("hero-photo") ??
+          document.getElementById("hero-selector");
+        setPastHero(!hero || hero.getBoundingClientRect().bottom < 80);
+      }
+
+      const delta = y - lastY.current;
+      // The 6px dead zone ignores scroll jitter; near the top the bar never
+      // hides (nothing is gained, and the hero's transparent state owns it).
+      if (y < 120) setHidden(false);
+      else if (delta > 6) setHidden(true);
+      else if (delta < -6) setHidden(false);
+      lastY.current = y;
     }
     window.addEventListener("scroll", update, { passive: true });
     update();
@@ -73,7 +94,7 @@ export default function Header() {
       <header
         className={`site-header ${isHome ? "site-header-home" : ""} ${
           isHome && !pastHero ? "is-transparent" : ""
-        }`}
+        } ${hidden && !open ? "is-hidden" : ""}`}
       >
         <div className="wrap header-row">
           <Link href="/" className="logo" aria-label="Murrelet — home">

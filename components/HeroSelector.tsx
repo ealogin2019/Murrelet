@@ -65,17 +65,12 @@ export default function HeroSelector({
   return (
     <section className="hero-select" id="hero-selector">
       <div className="hero-select-main">
-        <div className="hero-select-photo">
+        {/* No text overlays here — the campaign poster (hero-main.jpg)
+            carries its own baked-in wordmark and headline, and doubling
+            them with live text read as a collage. */}
+        <div className="hero-select-photo" id="hero-photo">
           <VariantImage src={photoSrc} alt="" eager />
           <div className="tint" style={{ backgroundColor: tint }} />
-          <div className="hero-photo-meta">
-            <span>Summer / 26</span>
-            <span>01 — 01</span>
-          </div>
-          <div className="hero-photo-caption">
-            <span>Made for warm places</span>
-            <strong>Light layers, easy days.</strong>
-          </div>
         </div>
 
         <div className="hero-select-text">
@@ -91,13 +86,21 @@ export default function HeroSelector({
             </Link>
           </div>
 
+          {/* Browse the edit — a swipeable index of numbered category cards
+              rather than a stacked text list. Each card carries its serial
+              number and a colour tick (the type's placeholder tint, or navy
+              once real photography exists). Desktop hover still previews the
+              type's photo in the hero frame; on touch the row simply swipes
+              and taps through. */}
           <div className="hero-select-categories">
             <div className="hero-select-categories-head">
               <span>Browse the edit</span>
-              <span>01 — 07</span>
+              <span>
+                {String(productTypes.length).padStart(2, "0")} categories
+              </span>
             </div>
-            <ul className="cat-list">
-              {productTypes.map((t) => (
+            <ul className="cat-index">
+              {productTypes.map((t, i) => (
                 <li key={t}>
                   <Link
                     href={`/shop?type=${t}`}
@@ -107,8 +110,22 @@ export default function HeroSelector({
                     onFocus={() => setHovered(t)}
                     onBlur={() => setHovered((h) => (h === t ? null : h))}
                   >
-                    <span>{productTypeLabels[t]}</span>
-                    <Icon path="M4 10h12M11 5l5 5-5 5" />
+                    <span className="cat-index-no">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span
+                      className="cat-index-tick"
+                      style={{
+                        backgroundColor: imageForType[t]
+                          ? "var(--navy)"
+                          : PLACEHOLDER_TINTS[t] ?? "var(--line)",
+                      }}
+                    />
+                    <span className="cat-index-name">{productTypeLabels[t]}</span>
+                    <span className="cat-index-go">
+                      Shop
+                      <Icon path="M4 10h12M11 5l5 5-5 5" />
+                    </span>
                   </Link>
                 </li>
               ))}

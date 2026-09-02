@@ -10,12 +10,19 @@ function Arrow() {
 }
 
 /**
- * Photographic entry points, replacing the old ALL/MEN/WOMEN/KIDS filter
- * pills — those read as app-UI controls, not a fashion edit. Categories
- * without a photographed product yet don't each get their own full-height
- * empty tile (three tiles, two of them near-blank grey boxes, reads as
- * broken rather than early) — they're pooled into one "coming soon" tile
- * sized to match, so the grid stays visually balanced at any catalog size.
+ * A slim editorial band, not a full-height gender splitter — that layout is
+ * earned the day a second category has photography, and pre-announcing it
+ * spent two screens of mobile scroll on things the store can't sell yet.
+ *
+ * Categories WITH photography get a short full-bleed photo strip each;
+ * categories without become quiet one-line "coming soon" rows underneath.
+ * They deliberately don't link anywhere: an announcement that opens an
+ * empty listing ("Nothing matches those filters yet") reads as broken, and
+ * a row that promises nothing but a season can't disappoint.
+ *
+ * The strip crops its photo to a wide band (not the same full frame the
+ * product card below shows) so the one photographed product doesn't appear
+ * twice identically within a single scroll.
  */
 export default function CategoryChapters({ catalog }: { catalog: Product[] }) {
   const shot = categories
@@ -29,32 +36,31 @@ export default function CategoryChapters({ catalog }: { catalog: Product[] }) {
   const unshot = categories.filter((c) => !shot.some((s) => s.category === c));
 
   return (
-    <section className="chapters" style={{ ["--chapter-count" as string]: shot.length + (unshot.length ? 1 : 0) }}>
+    <section className="chapter-band">
       {shot.map(({ category: c, image }) => (
-        <Link key={c} href={`/${c}`} className="chapter">
+        <Link key={c} href={`/${c}`} className="chapter-strip" data-reveal>
           <img src={image} alt="" loading="lazy" />
-          <div className="chapter-scrim" />
-          <div className="chapter-label">
-            <h2>{categoryLabels[c]}</h2>
-            <Arrow />
+          <div className="chapter-strip-scrim" />
+          <div className="chapter-strip-label">
+            <div>
+              <p className="eyebrow">Shop now</p>
+              <h2>{categoryLabels[c]}</h2>
+            </div>
+            <span className="chapter-strip-go">
+              <Arrow />
+            </span>
           </div>
         </Link>
       ))}
 
       {unshot.length > 0 && (
-        <div className="chapter chapter-soon-tile">
-          <p className="eyebrow">New season</p>
-          <h2>Coming soon</h2>
-          <ul>
-            {unshot.map((c) => (
-              <li key={c}>
-                <Link href={`/${c}`}>
-                  {categoryLabels[c]}
-                  <Arrow />
-                </Link>
-              </li>
-            ))}
-          </ul>
+        <div className="wrap chapter-coming" data-reveal>
+          {unshot.map((c) => (
+            <div key={c} className="chapter-coming-row">
+              <span className="chapter-coming-name">{categoryLabels[c]}</span>
+              <span className="eyebrow">S/S 27 — Coming soon</span>
+            </div>
+          ))}
         </div>
       )}
     </section>

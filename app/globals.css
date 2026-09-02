@@ -938,14 +938,7 @@ img {
   margin: 6px 0 0;
 }
 
-/* Swatches */
-.swatch-rail {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-top: 12px;
-}
-
+/* Swatches — product page only; cards no longer render a rail. */
 .swatch {
   width: 22px;
   height: 22px;
@@ -967,41 +960,11 @@ img {
   height: 30px;
 }
 
-.swatch-more {
-  font-size: 0.72rem;
-  color: var(--muted);
-}
-
 .swatch-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 24px;
-}
-
-/* Above md the rail overlays the image on hover, matching the reference.
-   Below md there is no hover to reveal it with, so it stays where it is —
-   static, under the image, always visible. */
-@media (min-width: 768px) {
-  .swatch-rail {
-    /* Pulled up over the bottom of the image by exactly its own height
-       (22px swatch + 2×12px padding). A negative margin can't drift the way
-       an absolute offset calculated from the card's height would. */
-    position: relative;
-    z-index: 1;
-    margin-top: -46px;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.92);
-    opacity: 0;
-    transition: opacity 0.15s ease;
-    pointer-events: none;
-  }
-
-  .card:hover .swatch-rail,
-  .card:focus-within .swatch-rail {
-    opacity: 1;
-    pointer-events: auto;
-  }
 }
 
 /* Product detail */
@@ -1987,135 +1950,148 @@ img {
 }
 
 /* ---------------------------------------------------------------------------
-   Category chapters — photographic entry points on the homepage, replacing
-   the old ALL/MEN/WOMEN/KIDS filter pills. Tile count tracks how many
-   categories actually have photography (plus one pooled "coming soon" tile
-   if any don't) via --chapter-count, so the grid stays balanced whether
-   there's one category shot or all three.
+   Category band — a slim editorial strip, not a full-height gender splitter.
+   Photographed categories each get a short full-bleed photo strip; the rest
+   are quiet one-line season rows beneath it. The whole band costs a third of
+   a screen, so New Arrivals stays one flick from the hero.
    --------------------------------------------------------------------------- */
-.chapters {
-  display: grid;
-  grid-template-columns: repeat(var(--chapter-count, 3), 1fr);
-  gap: 1px;
-  background: var(--line);
+.chapter-band {
   border-bottom: 1px solid var(--line);
 }
 
-.chapter {
+.chapter-strip {
   position: relative;
   display: block;
-  height: 460px;
-  background: var(--bg);
+  height: 220px;
   overflow: hidden;
+  background: var(--card-bg);
 }
 
-.chapter img {
+.chapter-strip img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* A wide band cropped around the garment — deliberately NOT the same full
+     frame the product card below shows of the same photo. */
+  object-position: 50% 26%;
+  transition: transform 0.7s cubic-bezier(0.2, 0.6, 0.2, 1);
 }
 
-.chapter-scrim {
+.chapter-strip:hover img {
+  transform: scale(1.035);
+}
+
+/* Left-weighted dusk scrim: the label sits at the left, and the studio
+   photography is near-white — white type needs something under it there. */
+.chapter-strip-scrim {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 40%;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.4) 100%);
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(10, 16, 28, 0.58) 0%,
+    rgba(10, 16, 28, 0.28) 42%,
+    rgba(10, 16, 28, 0.04) 75%
+  );
 }
 
-.chapter-label {
+.chapter-strip-label {
   position: absolute;
-  left: 28px;
-  right: 28px;
-  bottom: 24px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-}
-
-.chapter-label h2 {
-  font-family: var(--serif);
-  font-weight: 500;
-  font-size: 1.9rem;
-  color: #fff;
-  margin: 0;
-}
-
-.chapter-label svg {
-  width: 22px;
-  height: 22px;
-  stroke: #fff;
-  fill: none;
-  stroke-width: 1.3;
-}
-
-/* The pooled placeholder for categories with no photography yet — same
-   footprint as a real chapter tile, but built from type instead of a photo,
-   so it reads as a deliberate "more is coming" card rather than an empty
-   box. Navy ties it to the close-band and nav-promo elsewhere in the site. */
-.chapter-soon-tile {
-  background: var(--navy);
-  color: #fff;
-  padding: 32px 28px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 18px;
-}
-
-.chapter-soon-tile .eyebrow {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.chapter-soon-tile h2 {
-  font-family: var(--serif);
-  font-weight: 500;
-  font-size: 1.9rem;
-  margin: 0;
-  color: #fff;
-}
-
-.chapter-soon-tile ul {
-  list-style: none;
-  margin: 0;
-  padding: 4px 0 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.chapter-soon-tile li {
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-.chapter-soon-tile a {
+  left: clamp(24px, 5vw, 64px);
+  right: clamp(24px, 5vw, 64px);
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 13px 0;
-  font-size: 0.95rem;
+  color: #fff;
 }
 
-.chapter-soon-tile a:hover {
-  color: rgba(255, 255, 255, 0.75);
+.chapter-strip-label .eyebrow {
+  color: rgba(255, 255, 255, 0.72);
+  margin: 0 0 6px;
 }
 
-.chapter-soon-tile svg {
+.chapter-strip-label h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(1.7rem, 3.2vw, 2.3rem);
+  line-height: 1;
+  margin: 0;
+  color: #fff;
+}
+
+.chapter-strip-go {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  color: #fff;
+  transition: background-color 0.25s ease, color 0.25s ease,
+    border-color 0.25s ease, transform 0.25s ease;
+}
+
+.chapter-strip-go svg {
   width: 18px;
   height: 18px;
   stroke: currentColor;
   fill: none;
   stroke-width: 1.3;
-  opacity: 0.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-@media (max-width: 900px) {
-  .chapters {
-    grid-template-columns: 1fr;
+.chapter-strip:hover .chapter-strip-go,
+.chapter-strip:focus-visible .chapter-strip-go {
+  background: #fff;
+  border-color: #fff;
+  color: var(--navy);
+  transform: translateX(2px);
+}
+
+/* Coming-soon rows — hairline ledger lines, serif names, season note at the
+   right. Not links: an announcement that opens an empty listing reads as
+   broken, so these stay quiet until they have something to open. */
+.chapter-coming {
+  padding-top: 6px;
+  padding-bottom: 24px;
+}
+
+.chapter-coming-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.chapter-coming-row:last-child {
+  border-bottom: none;
+  padding-bottom: 4px;
+}
+
+.chapter-coming-name {
+  font-family: var(--serif);
+  font-size: 1.12rem;
+  color: var(--muted);
+}
+
+@media (min-width: 900px) {
+  .chapter-strip {
+    height: 260px;
   }
-  .chapter,
-  .chapter-soon-tile {
-    height: 340px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chapter-strip img,
+  .chapter-strip-go {
+    transition: none;
+  }
+  .chapter-strip:hover img {
+    transform: none;
   }
 }
 
@@ -2498,7 +2474,7 @@ img {
   overflow: hidden;
 }
 
-.cat-list svg,
+.cat-index svg,
 .hero-select-cta svg {
   width: 20px;
   height: 20px;
@@ -2533,7 +2509,9 @@ img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 18%;
+  /* Keyed to the campaign poster: keeps its baked headline and the model's
+     face in frame as the sides/bottom crop at narrower ratios. */
+  object-position: 50% 28%;
 }
 
 .hero-select-photo .tint {
@@ -2542,45 +2520,6 @@ img {
   transition: background-color 0.4s ease;
   pointer-events: none;
   mix-blend-mode: multiply;
-}
-
-.hero-photo-meta,
-.hero-photo-caption {
-  position: absolute;
-  left: clamp(20px, 4vw, 52px);
-  right: clamp(20px, 4vw, 52px);
-  z-index: 1;
-  color: #fff;
-  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.22);
-}
-
-.hero-photo-meta {
-  top: calc(var(--header-h) + 12px);
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.66rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.hero-photo-caption {
-  bottom: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.hero-photo-caption span {
-  font-size: 0.66rem;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-
-.hero-photo-caption strong {
-  font-family: var(--serif);
-  font-size: clamp(1.5rem, 3vw, 2.4rem);
-  font-weight: 500;
-  line-height: 1.05;
 }
 
 .hero-select-text {
@@ -2657,42 +2596,107 @@ img {
   border-bottom: 1px solid rgba(28, 28, 28, 0.16);
 }
 
-.cat-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 22px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.cat-list li {
-  border-bottom: 1px solid rgba(28, 28, 28, 0.16);
-}
-
-.cat-list a {
+/* Browse the edit — a swipeable index of numbered category cards, snapping
+   card-by-card. Reads as a curated table of contents rather than a nav list:
+   serial number top-left, a colour tick keyed to the type's tint, the name
+   in serif, and a "Shop" tail that slides in on hover. */
+.cat-index {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 10px;
-  min-height: 49px;
-  color: #4b4945;
-  font-family: var(--serif);
-  font-size: clamp(1.05rem, 2vw, 1.35rem);
-  transition: color 0.18s ease, padding 0.18s ease;
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 2px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
 
-.cat-list a:hover,
-.cat-list a:focus-visible,
-.cat-list a.is-active {
-  padding-left: 5px;
+.cat-index::-webkit-scrollbar {
+  display: none;
+}
+
+.cat-index li {
+  flex: none;
+  scroll-snap-align: start;
+}
+
+.cat-index a {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 26px;
+  width: 148px;
+  min-height: 128px;
+  padding: 13px 14px 12px;
+  border: 1px solid rgba(28, 28, 28, 0.16);
+  background: rgba(255, 255, 255, 0.55);
+  transition: border-color 0.2s ease, background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.cat-index a:hover,
+.cat-index a:focus-visible,
+.cat-index a.is-active {
+  border-color: var(--navy);
+  background: #fff;
+  transform: translateY(-2px);
+}
+
+.cat-index-no {
+  font-size: 0.62rem;
+  letter-spacing: var(--track-wide);
+  color: var(--muted);
+}
+
+.cat-index-tick {
+  position: absolute;
+  /* Sits beside the number — the <a> is the positioning context. */
+  top: 15px;
+  right: 14px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.cat-index a {
+  position: relative;
+}
+
+.cat-index-name {
+  font-family: var(--serif);
+  font-size: 1.12rem;
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+.cat-index-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.62rem;
+  letter-spacing: var(--track-wide);
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color 0.2s ease;
+}
+
+.cat-index svg {
+  width: 13px;
+  height: 13px;
+  opacity: 0.5;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.cat-index a:hover .cat-index-go,
+.cat-index a.is-active .cat-index-go {
   color: var(--navy);
 }
 
-.cat-list svg {
-  width: 16px;
-  height: 16px;
-  opacity: 0.45;
+.cat-index a:hover svg,
+.cat-index a.is-active svg {
+  transform: translateX(3px);
+  opacity: 1;
 }
 
 @media (max-width: 760px) {
@@ -2739,13 +2743,17 @@ img {
     padding: 13px 15px;
   }
 
-  .cat-list {
-    gap: 0 18px;
+  /* Bleed the index to the screen edge so the cut-off card invites the
+     swipe; padding keeps the first card aligned with the copy above. */
+  .cat-index {
+    margin-left: -20px;
+    margin-right: -20px;
+    padding: 2px 20px;
   }
 
-  .cat-list a {
-    min-height: 48px;
-    font-size: 1.08rem;
+  .cat-index a {
+    width: 138px;
+    min-height: 120px;
   }
 }
 
@@ -2758,14 +2766,181 @@ img {
     font-size: 3.05rem;
   }
 
-  .cat-list {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cat-list a,
+  .cat-index a,
+  .cat-index svg,
   .hero-select-photo .tint {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Mobile browsing pass — the store is browsed mostly on phones, so the
+   listing surfaces get the retail-standard treatment there: a two-up card
+   grid (one card per screen made "2 styles" feel like ten screens of
+   scrolling), filter chips on a single swipeable row instead of three
+   stacked rows, and touch targets at comfortable thumb size.
+   --------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .listing {
+    padding-top: 24px;
+  }
+
+  /* Two cards per row. The tight 12px column gap is deliberate — fashion
+     grids read as one browsing surface, not separated tiles. */
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px 12px;
+    padding: 20px 0 56px;
+  }
+
+  .grid .card-name {
+    font-size: 0.9rem;
+  }
+
+  .grid .card-price {
+    font-size: 0.8rem;
+  }
+
+  /* At half-width the inline "from" price wraps mid-sentence against the
+     list price — give it its own line instead. */
+  .grid .card-price-from {
+    display: block;
+    margin-left: 0;
+    margin-top: 2px;
+  }
+
+  .grid .card-badge {
+    font-size: 0.56rem;
+    padding: 5px 10px;
+    bottom: 8px;
+  }
+
+  .grid .card-colours {
+    font-size: 0.7rem;
+  }
+
+  /* One swipeable row per filter axis. Chips keep their natural width and
+     the row scrolls edge-to-edge — the bleed margins let the first chip
+     align with the page while the row still runs under the screen edge. */
+  .filter-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-left: -24px;
+    margin-right: -24px;
+    padding: 2px 24px;
+  }
+
+  .filter-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-chip {
+    flex: none;
+    padding: 10px 16px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Swatches and size buttons at thumb size on touch-first widths. */
+@media (max-width: 767px) {
+  .swatch {
+    width: 26px;
+    height: 26px;
+  }
+
+  .size-btn {
+    min-height: 46px;
+    min-width: 60px;
+  }
+
+  .close-band-inner {
+    padding: 56px 24px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Header motion — scrolling down tucks the bar away, any upward scroll
+   brings it back (class set in Header.tsx). Transform, not top, so the
+   sticky/fixed positioning stays untouched and the move compos on the GPU.
+   --------------------------------------------------------------------------- */
+.site-header {
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+.site-header.is-hidden {
+  transform: translateY(-100%);
+  box-shadow: none;
+}
+
+/* The homepage header already declares its own transition set for the
+   transparent state — extend it with transform rather than replacing it. */
+.site-header-home {
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.3s ease, backdrop-filter 0.3s ease,
+    border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Solid (non-home, or scrolled-past-hero) header gets a whisper of shadow so
+   it reads as a floating layer over the page rather than a ruled-off band. */
+.site-header:not(.is-transparent) {
+  border-bottom-color: transparent;
+  box-shadow: 0 1px 0 rgba(28, 28, 28, 0.07), 0 8px 24px rgba(4, 30, 66, 0.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header,
+  .site-header-home {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Scroll reveal — elements carrying data-reveal rise into place as they
+   enter the viewport (observer in RevealObserver.tsx). Hiding only applies
+   under html.reveal-ready, which the observer sets on mount: no JS, no
+   hidden content. Stagger comes from nth-child delays within grids, so the
+   markup never carries timing.
+   --------------------------------------------------------------------------- */
+.reveal-ready [data-reveal] {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.65, 0.25, 1);
+}
+
+.reveal-ready [data-reveal].is-revealed {
+  opacity: 1;
+  transform: none;
+}
+
+/* Neighbours in a grid arrive a beat apart — enough to read as a cascade,
+   not so much that slow-scrolling ever waits on an empty cell. */
+.reveal-ready .grid .card:nth-child(2n),
+.reveal-ready .pgrid .card:nth-child(2n),
+.reveal-ready .trust-item:nth-child(2) {
+  transition-delay: 90ms;
+}
+
+.reveal-ready .grid .card:nth-child(3n),
+.reveal-ready .pgrid .card:nth-child(3n),
+.reveal-ready .trust-item:nth-child(3) {
+  transition-delay: 180ms;
+}
+
+.reveal-ready .grid .card:nth-child(4n),
+.reveal-ready .pgrid .card:nth-child(4n) {
+  transition-delay: 270ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-ready [data-reveal] {
+    opacity: 1;
+    transform: none;
     transition: none;
   }
 }

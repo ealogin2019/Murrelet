@@ -20,7 +20,7 @@ export default function NewArrivals({ products }: { products: Product[] }) {
 
   return (
     <div className="wrap" id="new-arrivals">
-      <div className="shop-head">
+      <div className="shop-head" data-reveal>
         <p className="eyebrow">{isEdit ? "The edit" : "New arrivals"}</p>
         <Link href="/shop">Shop all &rarr;</Link>
       </div>

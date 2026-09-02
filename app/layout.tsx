@@ -4,6 +4,7 @@ import { CartProvider } from "@/lib/cart-context";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CookieBanner from "@/components/CookieBanner";
+import RevealObserver from "@/components/RevealObserver";
 import { SITE_URL } from "@/lib/site";
 
 const title = "Murrelet — Shirts, Polos & Shorts";
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
           <Footer />
           <CookieBanner />
+          <RevealObserver />
         </CartProvider>
       </body>
     </html>

@@ -26,7 +26,7 @@ export default function TrustStrip() {
     <div className="trust-strip">
       <div className="wrap trust-strip-inner">
         {ITEMS.map((item) => (
-          <div className="trust-item" key={item.label}>
+          <div className="trust-item" key={item.label} data-reveal>
             <svg viewBox="0 0 20 20" aria-hidden="true">
               <path d={item.path} />
             </svg>
