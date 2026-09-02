@@ -2734,6 +2734,147 @@ img {
   object-position: 50% 38%;
 }
 
+/* ------------------------------------------- poster copy, as live text ---
+ *
+ * SHOWCASE ONLY for now: it sits on top of the same words painted into the
+ * JPEG. That doubling is the point — it is the only way to judge placement
+ * and timing before the clean plates exist. When the posters come back
+ * without type this becomes the real headline and the painted one is gone.
+ *
+ * Positioned from where the painted copy actually sits. Measured on the
+ * poster (1024 x 1536): headline rows 455-662, subline 747-797, features
+ * 943-1270, all starting near column 70 — so 6.8% in, 29% down.
+ */
+.hero-poster-text {
+  position: absolute;
+  left: 6.8%;
+  top: 29%;
+  right: 52%;
+  z-index: 2;
+  color: var(--ink, #1a1a1a);
+  pointer-events: none;
+}
+
+.hpt-headline {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(1.35rem, 5.4vw, 2.1rem);
+  line-height: 1.14;
+  letter-spacing: -0.01em;
+}
+
+.hpt-line {
+  display: block;
+}
+
+/* Words stay unbroken; only the characters inside them animate. Without this
+   the line wraps mid-word once each letter is its own inline box. */
+.hpt-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.hpt-word + .hpt-word::before {
+  content: " ";
+  white-space: pre;
+}
+
+.hpt-char {
+  display: inline-block;
+  opacity: 0;
+  animation: hpt-rise 0.62s cubic-bezier(0.16, 0.84, 0.36, 1) forwards;
+}
+
+/* Out of thin air: up from below, slightly blurred and slightly wide, so it
+   resolves into place rather than simply appearing. */
+@keyframes hpt-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.42em);
+    filter: blur(5px);
+    letter-spacing: 0.06em;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+    letter-spacing: 0;
+  }
+}
+
+.hpt-rule,
+.hpt-sub,
+.hpt-features li {
+  opacity: 0;
+  animation: hpt-fade 0.7s ease-out forwards;
+}
+
+@keyframes hpt-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.hpt-rule {
+  display: block;
+  width: 34px;
+  height: 1px;
+  background: currentColor;
+  margin: 1.15em 0 0.9em;
+}
+
+.hpt-sub {
+  margin: 0;
+  font-size: clamp(0.56rem, 2.1vw, 0.72rem);
+  letter-spacing: var(--track-wide, 0.14em);
+  text-transform: uppercase;
+  line-height: 1.75;
+}
+
+.hpt-sub span {
+  display: block;
+}
+
+.hpt-features {
+  list-style: none;
+  margin: 2.6em 0 0;
+  padding: 0;
+  display: grid;
+  gap: 1.15em;
+}
+
+.hpt-features li {
+  font-size: clamp(0.5rem, 1.9vw, 0.66rem);
+  letter-spacing: var(--track-wide, 0.14em);
+  text-transform: uppercase;
+  line-height: 1.55;
+  /* Indented past the painted icons, which stay in the plate for now. */
+  padding-left: 2.6em;
+}
+
+.hpt-features li span {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hpt-char,
+  .hpt-rule,
+  .hpt-sub,
+  .hpt-features li {
+    animation: none;
+    opacity: 1;
+    filter: none;
+    letter-spacing: 0;
+    transform: none;
+  }
+}
+
 .hero-select-photo .tint {
   position: absolute;
   inset: 0;

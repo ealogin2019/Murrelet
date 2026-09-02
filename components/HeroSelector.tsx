@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Product, productTypes, productTypeLabels, ProductType } from "@/lib/catalog";
 import VariantImage from "@/components/VariantImage";
+import HeroPosterText from "@/components/HeroPosterText";
 
 // Placeholder stand-ins for real per-type photography that doesn't exist
 // yet. A type with a real, photographed product overrides this entirely —
@@ -75,6 +76,15 @@ export default function HeroSelector({
               BUILT FOR EVERYDAY ends at row 1270 of 1536, and the crop is
               placed to keep it — and the model's hair — in frame. */}
           <VariantImage src={photoSrc} alt="" eager />
+          {/* Showcase only, while the posters still carry their type: this
+              lands on top of the painted words so the placement and the
+              timing can be judged. It becomes the real copy the moment clean
+              plates arrive. */}
+          <HeroPosterText
+            headline={["Simplicity", "That Speaks", "Volumes."]}
+            subline={["Timeless style.", "Everyday comfort."]}
+            features={["Premium\ncotton", "Soft &\nbreathable", "Built for\neveryday"]}
+          />
           <div className="tint" style={{ backgroundColor: tint }} />
         </div>
 
