@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Product, productTypes, productTypeLabels, ProductType } from "@/lib/catalog";
 import VariantImage from "@/components/VariantImage";
 import HeroPosterText, { Feature } from "@/components/HeroPosterText";
@@ -115,27 +115,45 @@ export default function HeroSelector({
   const [leaving, setLeaving] = useState(false);
   const COPY_OUT_MS = 420;
 
-  function goTo(next: number) {
-    if (next === slide || leaving) return;
+  // One place decides what shows next, and one timer is ever in flight.
+  //
+  // Two used to race. A tap ran its own 420ms hand-off while the 7s rotation
+  // ran another, and when they overlapped the tap set the slide and the
+  // rotation's functional update immediately advanced past it — measured, a
+  // tap to the second poster landed on it and was back on the first 400ms
+  // later. Cancelling the pending hand-off before starting another makes the
+  // last instruction win, whichever it came from.
+  const pending = useRef<number | null>(null);
+
+  function show(next: (i: number) => number) {
+    if (pending.current !== null) window.clearTimeout(pending.current);
     setLeaving(true);
-    window.setTimeout(() => {
-      setSlide(next);
+    pending.current = window.setTimeout(() => {
+      setSlide((i) => next(i));
       setLeaving(false);
+      pending.current = null;
     }, COPY_OUT_MS);
+  }
+
+  function goTo(next: number) {
+    if (next === slide) return;
+    show(() => next);
   }
 
   useEffect(() => {
     if (hovered) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const t = setInterval(() => {
-      setLeaving(true);
-      window.setTimeout(() => {
-        setSlide((i) => (i + 1) % POSTERS.length);
-        setLeaving(false);
-      }, COPY_OUT_MS);
-    }, POSTER_MS);
+    const t = setInterval(() => show((i) => (i + 1) % POSTERS.length), POSTER_MS);
     return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hovered]);
+
+  useEffect(
+    () => () => {
+      if (pending.current !== null) window.clearTimeout(pending.current);
+    },
+    []
+  );
 
   const poster = POSTERS[slide];
   const realPhoto = hovered ? imageForType[hovered] : null;

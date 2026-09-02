@@ -51,10 +51,20 @@ export default function VariantImage({
     shownRef.current = src;
     setEntering(true);
 
-    // Next frame, so the browser paints the incoming layer at opacity 0 before
-    // it is told to animate to 1. Without this the transition is skipped and
-    // every change becomes a cut.
-    const raf = requestAnimationFrame(() => requestAnimationFrame(() => setEntering(false)));
+    // The incoming layer fades via a CSS ANIMATION, not a transition, and the
+    // class below is only bookkeeping now.
+    //
+    // A transition needs the browser to paint opacity 0 before being told to
+    // go to 1, which the old double-rAF tried to arrange. React 18 does not
+    // reliably flush the first render inside that window, so the paint never
+    // happened and the transition was skipped — measured mid-swap, the
+    // incoming layer mounted already at opacity 1.00 and the change was a
+    // straight cut. At 140ms that passed for a fast fade. At the hero's
+    // 1100ms it was simply instant.
+    //
+    // An animation runs from its own first keyframe on mount, with nothing to
+    // race, so this is correct at any duration.
+    const raf = requestAnimationFrame(() => setEntering(false));
 
     // With --colour-swap-ms: 0 there is no transition, so transitionend never
     // fires and the outgoing layer would sit in the DOM forever. Clear it on a
@@ -138,11 +148,15 @@ export default function VariantImage({
         <img className="variant-image-layer" src={outgoing} alt="" aria-hidden="true" />
       )}
       <img
-        className={`variant-image-layer ${entering ? "is-entering" : ""}`}
+        /* Keyed on the source so React MOUNTS a new element per change. A
+           CSS animation only runs on mount, so reusing the node would play
+           the fade once and never again. */
+        key={current}
+        className="variant-image-layer variant-image-in"
         src={current}
         alt={alt}
         loading={eager ? "eager" : "lazy"}
-        onTransitionEnd={() => setOutgoing(null)}
+        onAnimationEnd={() => setOutgoing(null)}
       />
       {showLabel && colourLabel && (
         <span className="variant-image-label" key={colourLabel}>

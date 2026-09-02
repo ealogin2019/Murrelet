@@ -2021,11 +2021,47 @@ img {
   transition: opacity var(--colour-swap-ms) linear;
 }
 
-/* The incoming layer starts transparent and is released to 1 on the next
-   frame. The outgoing layer keeps full opacity underneath, so the two
-   cross-dissolve rather than both dipping toward the background. */
-.variant-image-layer.is-entering {
-  opacity: 0;
+/* The incoming layer fades up over the outgoing one, which holds full
+   opacity underneath — so the two cross-dissolve rather than both dipping
+   toward the background and flashing it.
+ *
+ * An ANIMATION, not a transition. A transition needs the browser to paint
+ * opacity 0 before being told to go to 1, and React 18 does not reliably
+ * flush that first render in time: measured mid-swap, the incoming layer
+ * mounted already at 1.00 and the change was a cut. At 140ms that passed for
+ * a fast fade; at the hero's 1100ms there was nothing to see. An animation
+ * runs from its own first keyframe on mount, with nothing to race. */
+.variant-image-in {
+  animation: variant-fade-in var(--colour-swap-ms) linear both;
+}
+
+@keyframes variant-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Reduced motion: no fade, and the image must still be VISIBLE.
+ *
+ * These animations fill `both`, so their first keyframe — opacity 0 — is what
+ * holds whenever the animation does not run. Cancelling it without restoring
+ * opacity leaves the photograph invisible rather than merely un-animated. The
+ * hero's own rule is listed too: it is more specific than .variant-image-in,
+ * so an override that names only the plain class loses to it and the hero
+ * would have gone blank for exactly the people who asked for less motion.
+ *
+ * With --colour-swap-ms: 0 the animation has no duration and never emits
+ * animationend either; VariantImage's timer clears the outgoing layer anyway. */
+@media (prefers-reduced-motion: reduce) {
+  .variant-image-in,
+  .hero-select-photo .variant-image-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .variant-image-label {
@@ -2725,15 +2761,23 @@ img {
   --colour-swap-ms: 1100ms;
 }
 
-.hero-select-photo .variant-image-layer.is-entering {
-  /* Barely-there scale on the incoming frame. It gives the dissolve a
-     direction, so the poster arrives rather than simply materialising. */
-  transform: scale(1.028);
+/* The poster arrives rather than materialising: it fades up while easing
+   back from a barely-there 1.03, so the dissolve has a direction. One
+   animation drives both, since a transform transition would need the same
+   first paint the opacity one could not get. */
+.hero-select-photo .variant-image-in {
+  animation: hero-poster-in var(--colour-swap-ms) cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
-.hero-select-photo .variant-image-layer {
-  transition: opacity var(--colour-swap-ms) cubic-bezier(0.4, 0, 0.2, 1),
-    transform 1500ms cubic-bezier(0.22, 0.61, 0.36, 1);
+@keyframes hero-poster-in {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .hero-select-photo .variant-image-layer {
@@ -2767,9 +2811,19 @@ img {
 .hero-poster-text {
   position: absolute;
   left: 7%;
-  top: 50%;
-  transform: translateY(-50%);
   right: 52%;
+  /* Centred in the space BELOW the header, not in the whole frame.
+   *
+   * Centring on the frame put the top of a tall headline under the fixed
+   * bar: the hoodie's runs to four lines where the tee's runs to three, and
+   * "Effortless" ended up behind the navigation. Bounding the box at the
+   * header's own height means the copy can grow to any number of lines and
+   * still never reach it. */
+  top: var(--header-h);
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   z-index: 2;
   color: var(--ink, #1a1a1a);
   pointer-events: none;
@@ -2780,7 +2834,7 @@ img {
    photograph behind it begins to dissolve. */
 .hero-poster-text.is-leaving {
   opacity: 0;
-  transform: translateY(calc(-50% - 6px));
+  transform: translateY(-6px);
 }
 
 .hpt-headline {
