@@ -991,10 +991,42 @@ img {
    it. Without this the size picker leaves the screen on the second shot and
    the customer has to scroll back up to buy. */
 @media (min-width: 761px) {
-  .product-info {
+  .product-buy {
     position: sticky;
     top: 96px;
     align-self: start;
+  }
+
+  .product-colour {
+    margin-bottom: 4px;
+  }
+}
+
+/* Give horizontal gestures back to the gallery track.
+ *
+ * .variant-image claims `touch-action: pan-y` because on a CARD a sideways
+ * swipe changes colour. The gallery's first slide is a VariantImage, so it
+ * was swallowing every swipe before the scroll-snap track underneath ever
+ * saw it — the track scrolled fine when driven from script and not at all
+ * from a finger, which is exactly what that declaration does.
+ *
+ * Inside the gallery the colour handlers are not attached at all, so the
+ * claim buys nothing and only costs the swipe.
+ */
+.product-gallery .variant-image {
+  touch-action: auto;
+}
+
+/* Phone: .product-buy dissolves, so colour becomes a sibling of the gallery
+   and lands directly beneath it. Same markup, same state — only the box it
+   sits in changes. */
+@media (max-width: 760px) {
+  .product-buy {
+    display: contents;
+  }
+
+  .product-colour {
+    padding-top: 4px;
   }
 }
 
@@ -1045,6 +1077,111 @@ img {
   .gallery-dots span.is-on {
     background: var(--ink, #1a1a1a);
     transform: scale(1.25);
+  }
+}
+
+/* ---------------------------------------------------------------- viewer */
+
+.product-gallery .product-image {
+  cursor: zoom-in;
+}
+
+.zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  /* Not black. A near-black warm grey sits under the studio white of these
+     flat lays without the hard rim a pure #000 ground puts around them. */
+  background: #14130f;
+  display: flex;
+  align-items: center;
+  animation: zoom-in-fade 0.22s ease-out;
+}
+
+@keyframes zoom-in-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.zoom-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.zoom-track::-webkit-scrollbar {
+  display: none;
+}
+
+.zoom-slide {
+  scroll-snap-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 16px;
+  /* A grid item in an auto-flow track has no definite height, so a
+     percentage max-height on the image resolves against nothing and the
+     photograph renders at its natural size: measured at 1200 x 1800 inside a
+     900px window, overflowing by nine hundred pixels. min-height: 0 lets the
+     item shrink, and the image is capped in viewport units so it never
+     depends on the parent resolving at all. */
+  min-height: 0;
+  height: 100%;
+}
+
+.zoom-slide img {
+  max-width: 100%;
+  max-height: calc(100dvh - 112px);
+  width: auto;
+  height: auto;
+  /* contain, so nothing is cropped. See the note in ProductDetail. */
+  object-fit: contain;
+}
+
+.zoom-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f6f4f0;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.zoom-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.zoom-count {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  color: rgba(246, 244, 240, 0.7);
+  font-size: 0.7rem;
+  letter-spacing: var(--track-wide, 0.12em);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zoom {
+    animation: none;
   }
 }
 
