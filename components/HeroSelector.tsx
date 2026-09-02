@@ -1,10 +1,51 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Product, productTypes, productTypeLabels, ProductType } from "@/lib/catalog";
 import VariantImage from "@/components/VariantImage";
-import HeroPosterText from "@/components/HeroPosterText";
+import HeroPosterText, { Feature } from "@/components/HeroPosterText";
+
+/**
+ * The campaign posters, in rotation.
+ *
+ * Each carries its own copy because the copy IS the poster's — it is only
+ * rendered live so it can animate and be read by anything other than a human
+ * eye. When the clean plates land, these strings stay exactly as they are and
+ * the painted words underneath them go.
+ */
+type Poster = {
+  image: string;
+  headline: string[];
+  subline: string[];
+  features: Feature[];
+};
+
+const POSTERS: Poster[] = [
+  {
+    image: "/images/hero-tee.webp",
+    headline: ["Simplicity", "That Speaks", "Volumes."],
+    subline: ["Timeless style.", "Everyday comfort."],
+    features: [
+      { icon: "cotton", lines: ["Premium", "cotton"] },
+      { icon: "leaf", lines: ["Soft &", "breathable"] },
+      { icon: "tee", lines: ["Built for", "everyday"] },
+    ],
+  },
+  {
+    image: "/images/hero-hoodie.webp",
+    headline: ["Effortless", "Comfort.", "Everyday You."],
+    subline: ["Timeless style.", "Made for real life."],
+    features: [
+      { icon: "cotton", lines: ["Premium", "cotton"] },
+      { icon: "leaf", lines: ["Soft &", "breathable"] },
+      { icon: "hoodie", lines: ["Modern fit,", "natural feel"] },
+    ],
+  },
+];
+
+/** Long enough to read the headline's ~1.4s entrance and then sit with it. */
+const POSTER_MS = 7000;
 
 // Placeholder stand-ins for real per-type photography that doesn't exist
 // yet. A type with a real, photographed product overrides this entirely —
@@ -59,8 +100,46 @@ export default function HeroSelector({
     return map;
   }, [catalog]);
 
+  // Which poster is showing. It holds while a category is being previewed —
+  // advancing under a photo the visitor deliberately called up would take it
+  // away mid-look — and stops entirely for anyone who has asked for less
+  // motion.
+  const [slide, setSlide] = useState(0);
+  // The copy clears before the photograph dissolves.
+  //
+  // Both at once looked wrong: the headline is keyed on the slide, so React
+  // unmounts it the instant the index changes and the words simply blink out
+  // while the image behind them is still a second from resolving. Fading the
+  // copy first, then swapping, makes the two read as one movement instead of
+  // a cut inside a dissolve.
+  const [leaving, setLeaving] = useState(false);
+  const COPY_OUT_MS = 420;
+
+  function goTo(next: number) {
+    if (next === slide || leaving) return;
+    setLeaving(true);
+    window.setTimeout(() => {
+      setSlide(next);
+      setLeaving(false);
+    }, COPY_OUT_MS);
+  }
+
+  useEffect(() => {
+    if (hovered) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t = setInterval(() => {
+      setLeaving(true);
+      window.setTimeout(() => {
+        setSlide((i) => (i + 1) % POSTERS.length);
+        setLeaving(false);
+      }, COPY_OUT_MS);
+    }, POSTER_MS);
+    return () => clearInterval(t);
+  }, [hovered]);
+
+  const poster = POSTERS[slide];
   const realPhoto = hovered ? imageForType[hovered] : null;
-  const photoSrc = realPhoto ?? fallbackImage;
+  const photoSrc = realPhoto ?? poster.image ?? fallbackImage;
   const tint = hovered && !realPhoto ? PLACEHOLDER_TINTS[hovered] ?? "transparent" : "transparent";
 
   return (
@@ -80,12 +159,36 @@ export default function HeroSelector({
               lands on top of the painted words so the placement and the
               timing can be judged. It becomes the real copy the moment clean
               plates arrive. */}
-          <HeroPosterText
-            headline={["Simplicity", "That Speaks", "Volumes."]}
-            subline={["Timeless style.", "Everyday comfort."]}
-            features={["Premium\ncotton", "Soft &\nbreathable", "Built for\neveryday"]}
-          />
+          {/* Keyed on the slide so React remounts it: a CSS animation does
+              not restart when its element merely re-renders, so without this
+              the second poster's copy would appear already finished. Hidden
+              while a category preview is up, where the poster's words do not
+              belong to the photo on screen. */}
+          {!realPhoto && (
+            <HeroPosterText
+              key={slide}
+              leaving={leaving}
+              headline={poster.headline}
+              subline={poster.subline}
+              features={poster.features}
+            />
+          )}
           <div className="tint" style={{ backgroundColor: tint }} />
+
+          {POSTERS.length > 1 && (
+            <div className="hero-select-dots">
+              {POSTERS.map((p, i) => (
+                <button
+                  key={p.image}
+                  type="button"
+                  className={i === slide ? "is-on" : ""}
+                  aria-label={`Show poster ${i + 1}`}
+                  aria-current={i === slide}
+                  onClick={() => goTo(i)}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="hero-select-text">

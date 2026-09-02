@@ -42,6 +42,8 @@ export default function VariantImage({
   // the effect itself sets makes it re-run and tear down its own timers before
   // they fire — the fade never starts and the outgoing layer never clears.
   const shownRef = useRef(src);
+  // The box itself, so the sweep timer can read the duration in force on it.
+  const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (src === shownRef.current) return;
@@ -57,7 +59,24 @@ export default function VariantImage({
     // With --colour-swap-ms: 0 there is no transition, so transitionend never
     // fires and the outgoing layer would sit in the DOM forever. Clear it on a
     // timer too; whichever happens first wins.
-    const sweep = setTimeout(() => setOutgoing(null), 600);
+    //
+    // The timer reads the duration actually in force rather than assuming the
+    // 140ms swatch default. The hero runs a 1100ms poster dissolve, and a
+    // fixed 600ms guard pulled the outgoing poster at just over half opacity —
+    // the ground showed through both layers and the swap flashed. Read from
+    // the element so any future override is respected without touching this.
+    let ms = 600;
+    const el = boxRef.current;
+    if (el) {
+      const v = getComputedStyle(el).getPropertyValue("--colour-swap-ms").trim();
+      const parsed = v.endsWith("ms")
+        ? parseFloat(v)
+        : v.endsWith("s")
+          ? parseFloat(v) * 1000
+          : NaN;
+      if (!Number.isNaN(parsed)) ms = parsed + 260;
+    }
+    const sweep = setTimeout(() => setOutgoing(null), ms);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(sweep);
@@ -103,6 +122,7 @@ export default function VariantImage({
 
   return (
     <div
+      ref={boxRef}
       className="variant-image"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}

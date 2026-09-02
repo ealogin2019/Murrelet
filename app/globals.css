@@ -2715,6 +2715,25 @@ img {
 .hero-select-photo .variant-image {
   width: 100%;
   height: 100%;
+  /* A poster dissolve, not a swatch swap. 140ms linear is right for changing
+     a shirt's colour where the two frames are near-identical; between two
+     different campaign photographs it reads as a flicker. Long and eased so
+     one image settles into the other.
+
+     VariantImage reads this value to time clearing its outgoing layer, so
+     raising it here is enough — see the note there. */
+  --colour-swap-ms: 1100ms;
+}
+
+.hero-select-photo .variant-image-layer.is-entering {
+  /* Barely-there scale on the incoming frame. It gives the dissolve a
+     direction, so the poster arrives rather than simply materialising. */
+  transform: scale(1.028);
+}
+
+.hero-select-photo .variant-image-layer {
+  transition: opacity var(--colour-swap-ms) cubic-bezier(0.4, 0, 0.2, 1),
+    transform 1500ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 .hero-select-photo .variant-image-layer {
@@ -2736,23 +2755,32 @@ img {
 
 /* ------------------------------------------- poster copy, as live text ---
  *
- * SHOWCASE ONLY for now: it sits on top of the same words painted into the
- * JPEG. That doubling is the point — it is the only way to judge placement
- * and timing before the clean plates exist. When the posters come back
- * without type this becomes the real headline and the painted one is gone.
+ * This IS the copy now. The plates came back without type, so nothing is
+ * painted underneath any more and these words are the only ones on the
+ * poster — which also makes them selectable, translatable and readable by
+ * search, none of which was true while they were pixels.
  *
- * Positioned from where the painted copy actually sits. Measured on the
- * poster (1024 x 1536): headline rows 455-662, subline 747-797, features
- * 943-1270, all starting near column 70 — so 6.8% in, 29% down.
+ * It briefly sat at top: 29% to overlap the painted words while they still
+ * existed. With the ink gone that reference is meaningless, so the block is
+ * centred against the empty wall on the left of both compositions instead.
  */
 .hero-poster-text {
   position: absolute;
-  left: 6.8%;
-  top: 29%;
+  left: 7%;
+  top: 50%;
+  transform: translateY(-50%);
   right: 52%;
   z-index: 2;
   color: var(--ink, #1a1a1a);
   pointer-events: none;
+  transition: opacity 400ms ease, transform 400ms ease;
+}
+
+/* Cleared ahead of the poster change, so the copy is gone before the
+   photograph behind it begins to dissolve. */
+.hero-poster-text.is-leaving {
+  opacity: 0;
+  transform: translateY(calc(-50% - 6px));
 }
 
 .hpt-headline {
@@ -2854,12 +2882,54 @@ img {
   letter-spacing: var(--track-wide, 0.14em);
   text-transform: uppercase;
   line-height: 1.55;
-  /* Indented past the painted icons, which stay in the plate for now. */
-  padding-left: 2.6em;
+  display: flex;
+  align-items: center;
+  gap: 1.15em;
 }
 
 .hpt-features li span {
   display: block;
+}
+
+/* Drawn rather than painted, so they take the copy's ink and stay sharp at
+   any size. Sized in em off the label beside them, which keeps the pairing
+   intact as the type scales with the viewport. */
+.hpt-icon {
+  flex: none;
+  width: 2.5em;
+  height: 2.5em;
+  overflow: visible;
+}
+
+.hpt-feature-copy {
+  display: block;
+}
+
+/* Carousel dots. Placed against the poster's foot rather than over the copy,
+   which sits on the left. */
+.hero-select-dots {
+  position: absolute;
+  z-index: 3;
+  bottom: 14px;
+  right: 14px;
+  display: flex;
+  gap: 7px;
+}
+
+.hero-select-dots button {
+  width: 6px;
+  height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(26, 26, 26, 0.28);
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+
+.hero-select-dots button.is-on {
+  background: rgba(26, 26, 26, 0.82);
+  transform: scale(1.3);
 }
 
 @media (prefers-reduced-motion: reduce) {
