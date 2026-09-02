@@ -2939,9 +2939,22 @@ img {
      * contain is in view, and the header floats over the top of it as it was
      * meant to. The cap is only a guard for a very short viewport. */
     width: 100%;
-    height: auto;
-    aspect-ratio: 1024 / 1536;
-    max-height: 82vh;
+    /* Cropped to the owner's sketch rather than shown whole: the full 2:3
+     * poster left the trousers and floor filling the lower third and read
+     * slack. The marked frame runs from just under the header to a little
+     * below BUILT FOR EVERYDAY -- source rows 77 to 1321 of 1536, which at
+     * 375px wide is 1244 rows x 0.366 = 455px, or 121vw.
+     *
+     * Paired with object-position below; the two are one measurement and
+     * changing either alone moves the frame off the artwork. */
+    height: 121vw;
+    max-height: 62vh;
+  }
+
+  .hero-select-photo .variant-image-layer {
+    /* 26% of the 107px overflow sits above the frame, putting its top edge at
+       source row 77 -- clear of the model's hair, which starts near 150. */
+    object-position: 50% 26%;
   }
 
   .hero-photo-meta {
