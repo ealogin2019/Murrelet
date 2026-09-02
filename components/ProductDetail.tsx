@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Product,
@@ -33,6 +33,26 @@ export default function ProductDetail({
   useEffect(() => {
     setSizeId(null);
   }, [variant.id]);
+
+  // The gallery is a swipeable track on a phone. Switching colour has to send
+  // it back to the first shot: the new colour has its own images, and leaving
+  // the track parked on frame three shows a different garment than the one
+  // the swatch just selected — or nothing at all when the new colour has
+  // fewer shots.
+  const track = useRef<HTMLDivElement>(null);
+  const [shot, setShot] = useState(0);
+  useEffect(() => {
+    setShot(0);
+    const el = track.current;
+    if (el) el.scrollTo({ left: 0, behavior: "auto" });
+  }, [variant.id]);
+
+  function onTrackScroll() {
+    const el = track.current;
+    if (!el || el.clientWidth === 0) return;
+    const i = Math.round(el.scrollLeft / el.clientWidth);
+    setShot(Math.min(Math.max(i, 0), variant.images.length - 1));
+  }
 
   const price = useMemo(() => variantPrice(product, variant), [product, variant]);
   const sku: Sku | undefined = variant.skus.find((s) => s.id === sizeId);
@@ -73,26 +93,47 @@ export default function ProductDetail({
       </nav>
 
       <div className="product-detail">
-        <div className="product-gallery">
-          {/* The lead shot swaps colour in place — swipe it on a phone, or
-              use the swatches. Any further shots of this colour stack below
-              and simply re-render when the colour changes. */}
-          <div className="product-image">
-            <VariantImage
-              src={variant.images[0]}
-              alt={`${product.name} — ${variant.colour}`}
-              colourLabel={variant.colour}
-              showLabel
-              eager
-              onNext={product.variants.length > 1 ? () => stepColour(1) : undefined}
-              onPrev={product.variants.length > 1 ? () => stepColour(-1) : undefined}
-            />
-          </div>
-          {variant.images.slice(1).map((src) => (
-            <div className="product-image" key={src}>
-              <img src={src} alt={`${product.name} — ${variant.colour}`} loading="lazy" />
+        {/* One element, two behaviours, decided in CSS rather than by
+            rendering the gallery twice.
+
+            On a desktop the shots stack and the buying column beside them is
+            sticky, so scrolling through the photography never takes the size
+            picker off screen.
+
+            On a phone that stack put the add-to-bag button four full-height
+            images down the page. Here the same children become a horizontal
+            scroll-snap track, so the whole gallery is one screen and the
+            controls sit directly under it. */}
+        <div className="product-gallery-wrap">
+          <div
+            className="product-gallery"
+            ref={track}
+            onScroll={onTrackScroll}
+          >
+            <div className="product-image">
+              <VariantImage
+                src={variant.images[0]}
+                alt={`${product.name} — ${variant.colour}`}
+                colourLabel={variant.colour}
+                showLabel
+                eager
+                onNext={product.variants.length > 1 ? () => stepColour(1) : undefined}
+                onPrev={product.variants.length > 1 ? () => stepColour(-1) : undefined}
+              />
             </div>
-          ))}
+            {variant.images.slice(1).map((src) => (
+              <div className="product-image" key={src}>
+                <img src={src} alt={`${product.name} — ${variant.colour}`} loading="lazy" />
+              </div>
+            ))}
+          </div>
+          {variant.images.length > 1 && (
+            <div className="gallery-dots" aria-hidden="true">
+              {variant.images.map((src, i) => (
+                <span key={src} className={i === shot ? "is-on" : ""} />
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="product-info">
@@ -166,6 +207,12 @@ export default function ProductDetail({
               </button>
             ))}
           </div>
+
+          {/* The SKU identifies a SIZE within a colour, not the product, so
+              there is nothing honest to show until a size is picked. Shown
+              here rather than beside the title for that reason — and because
+              it is what a customer quotes back in an email about an order. */}
+          {sku && <p className="product-sku">{sku.id}</p>}
 
           <button className="btn" onClick={handleAddToBag} disabled={!sku}>
             {added ? "Added to bag" : sku ? "Add to bag" : "Select a size"}

@@ -352,7 +352,11 @@ img {
 .product-image {
   overflow: hidden;
   background: var(--card-bg);
-  aspect-ratio: 3/4;
+  /* 2:3, matching what the image engine renders (1200 x 1800). At 3/4 with
+     object-fit: cover the box was wider than the photograph, so every shot
+     lost about 11% off its top and bottom — on a flat lay that is the collar
+     and the hem, the two things a customer is looking at. */
+  aspect-ratio: 2/3;
 }
 
 .product-image img {
@@ -981,6 +985,77 @@ img {
 .product-gallery {
   display: grid;
   gap: 8px;
+}
+
+/* Desktop: the buying column stays put while the photography scrolls past
+   it. Without this the size picker leaves the screen on the second shot and
+   the customer has to scroll back up to buy. */
+@media (min-width: 761px) {
+  .product-info {
+    position: sticky;
+    top: 96px;
+    align-self: start;
+  }
+}
+
+/* Phone: the same children become one swipeable track.
+   Stacked, four full-height images put add-to-bag off the bottom of four
+   screens. As a snap track the whole gallery is one screen and the controls
+   sit under it. */
+@media (max-width: 760px) {
+  .product-gallery {
+    grid-auto-flow: column;
+    grid-auto-columns: 100%;
+    gap: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .product-gallery::-webkit-scrollbar {
+    display: none;
+  }
+
+  .product-gallery > .product-image {
+    scroll-snap-align: start;
+  }
+}
+
+.gallery-dots {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .gallery-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 0 4px;
+  }
+
+  .gallery-dots span {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--rule, #d8d5cf);
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .gallery-dots span.is-on {
+    background: var(--ink, #1a1a1a);
+    transform: scale(1.25);
+  }
+}
+
+/* The SKU. Small, monospaced and quiet — it is a reference a customer quotes
+   back, not a thing to read while deciding. */
+.product-sku {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--muted, #6b6862);
+  margin: 0 0 12px;
 }
 
 .badge-list {
