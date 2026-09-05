@@ -195,27 +195,92 @@ const TREATMENT_NUMBER = {
 } as const;
 type TreatmentKey = keyof typeof TREATMENT_NUMBER;
 
-/** Colourways, in the order they were first issued. Append only. */
-const COLOUR_NUMBER: Record<string, string> = {
-  Black: "01",
-  Brown: "02",
-  Burgundy: "03",
-  Charcoal: "04",
-  Grey: "05",
-  Navy: "06",
-  Sand: "07",
-  "Sky Blue": "08",
-  White: "09",
-  // Colours that predate the numbering, on products still carrying provisional
-  // data. They take the next free numbers rather than displacing anything.
-  "Light Blue": "10",
-  "Light Grey": "11",
-  "Dark Grey": "12",
-  "Dark Brown": "13",
-  Beige: "14",
-  Chambray: "15",
-  Violet: "16",
-};
+/**
+ * The colour standards.
+ *
+ * A number belongs to a CLOTH, not to a word. Keying colour numbers off names
+ * alone let two different fabrics both called "Brown" share 02 -- measured
+ * dE 11.6 apart, further than Grey is from Light Grey -- which means a stock
+ * count sums two fabrics and a picker sends whichever is nearer. Each number
+ * therefore carries the measured swatch it was issued against, and
+ * assertColoursDistinct below checks every garment's actual cloth against it.
+ *
+ * `standard` is the reference measurement, taken from the first product issued
+ * that colour, using the same 60th-88th luminance percentile of the flat lay
+ * as the swatch chips. null means the number is RESERVED but has no standard
+ * yet -- a showcase placeholder that has never been photographed properly.
+ * Those products do not carry numeric skus, so nothing is validated against a
+ * measurement that does not exist.
+ *
+ * APPEND ONLY. A colour keeps its number for as long as the business exists.
+ * Gaps are fine and expected; density is not a virtue here. Renaming, by
+ * contrast, is free -- the number is what operations holds on to, the name is
+ * only what the customer reads.
+ */
+type ColourStandard = { number: string; name: string; standard: string | null };
+
+const COLOUR_STANDARDS: ColourStandard[] = [
+  { number: "01", name: "Black", standard: "#151515" },
+  { number: "02", name: "Brown", standard: "#39251B" },
+  { number: "03", name: "Burgundy", standard: "#601124" },
+  { number: "04", name: "Charcoal", standard: "#35353A" },
+  { number: "05", name: "Grey", standard: "#A4A4A6" },
+  { number: "06", name: "Navy", standard: "#18243C" },
+  { number: "07", name: "Sand", standard: "#DDC9B5" },
+  { number: "08", name: "Sky Blue", standard: "#BED3EB" },
+  { number: "09", name: "White", standard: "#F0F0F2" },
+  // Reserved by showcase placeholders. No standard until one is photographed.
+  { number: "10", name: "Light Blue", standard: null },
+  { number: "11", name: "Light Grey", standard: "#C1C1C1" },
+  { number: "12", name: "Dark Grey", standard: null },
+  { number: "13", name: "Dark Brown", standard: null },
+  { number: "14", name: "Beige", standard: null },
+  { number: "15", name: "Chambray", standard: null },
+  { number: "16", name: "Violet", standard: null },
+  // The Small.TextLogo shoot's brown and charcoal are different cloths from
+  // the Large.Text ones above, not different lighting: dE 11.6 and 8.9 against
+  // a same-cloth spread of 0.7-4.1 across the other seven colourways. They get
+  // their own numbers rather than sharing. Names are provisional -- rename
+  // them freely, the numbers are what must not move.
+  { number: "17", name: "Chestnut", standard: "#573829" },
+  { number: "18", name: "Graphite", standard: "#49494B" },
+];
+
+const COLOUR_NUMBER: Record<string, string> = Object.fromEntries(
+  COLOUR_STANDARDS.map((c) => [c.name, c.number])
+);
+
+/** CIE76 colour difference. Crude next to CIE2000 and entirely sufficient
+ *  here: the question is "same cloth or not", where the measured gap is either
+ *  under 5 or over 8, never in between. */
+function deltaE(a: string, b: string): number {
+  const lab = (hex: string) => {
+    const n = parseInt(hex.slice(1), 16);
+    let [r, g, bl] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => v / 255);
+    [r, g, bl] = [r, g, bl].map((v) => (v > 0.04045 ? ((v + 0.055) / 1.055) ** 2.4 : v / 12.92));
+    const X = (r * 0.4124 + g * 0.3576 + bl * 0.1805) / 0.95047;
+    const Y = r * 0.2126 + g * 0.7152 + bl * 0.0722;
+    const Z = (r * 0.0193 + g * 0.1192 + bl * 0.9505) / 1.08883;
+    const f = (t: number) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+    return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
+  };
+  const [l1, a1, b1] = lab(a);
+  const [l2, a2, b2] = lab(b);
+  return Math.hypot(l1 - l2, a1 - a2, b1 - b2);
+}
+
+/**
+ * Thresholds, set from the measurements rather than picked.
+ *
+ * Across the seven colourways photographed twice, shoot-to-shoot variation of
+ * the SAME cloth measured 0.7 to 4.1. The two genuine mismatches measured 8.9
+ * and 11.6. So anything at or under 5 is the same cloth photographed twice,
+ * and anything at or over 8 is a different cloth. The gap between the two is
+ * deliberately left as a warning band: it is where a real question lives, and
+ * a number should not be issued on a coin toss.
+ */
+const SAME_CLOTH = 5;
+const DIFFERENT_CLOTH = 8;
 
 /** Sizes. Three digits because a waist or a shoe size will not fit in two. */
 const SIZE_NUMBER: Record<string, string> = {
@@ -320,11 +385,20 @@ const largeTextTee: Product = {
  *  and Charcoal, Navy, Sand, Sky Blue and White have no seventh frame. Writing
  *  the real number per colour keeps the gallery from linking to a file that was
  *  never made. */
-const SMALL_TEXT_COLOURS: { colour: string; swatch: string; shots: number }[] = [
+const SMALL_TEXT_COLOURS: {
+  colour: string;
+  swatch: string;
+  shots: number;
+  /** Image folder, when it differs from the colour name. A colour may be
+   *  renamed at any time; the photography on disk should not have to move for
+   *  it, and a rename that silently 404s the gallery is worse than the name it
+   *  fixed. */
+  folder?: string;
+}[] = [
   { colour: "Black", swatch: "#1D1D1C", shots: 5 },
-  { colour: "Brown", swatch: "#573829", shots: 6 },
+  { colour: "Chestnut", swatch: "#573829", shots: 6, folder: "brown" },
   { colour: "Burgundy", swatch: "#5A1624", shots: 6 },
-  { colour: "Charcoal", swatch: "#49494B", shots: 5 },
+  { colour: "Graphite", swatch: "#49494B", shots: 5, folder: "charcoal" },
   { colour: "Grey", swatch: "#A4A4A6", shots: 6 },
   { colour: "Navy", swatch: "#1A2134", shots: 5 },
   { colour: "Sand", swatch: "#DFCDB5", shots: 5 },
@@ -354,14 +428,17 @@ const smallTextLogoTee: Product = {
   ],
   badges: ["NEW ARRIVAL"],
   price: 3500,
-  variants: SMALL_TEXT_COLOURS.map(({ colour, swatch, shots: n }) => ({
-    id: `small-text-logo-tee-${colour.toLowerCase().replace(/\s+/g, "-")}`,
-    colour,
-    swatch,
-    price: null,
-    images: shots("small-text-logo-tee", colour.toLowerCase().replace(/\s+/g, "-"), n),
-    skus: skuRun("t-shirts", "small-text-logo", colour),
-  })),
+  variants: SMALL_TEXT_COLOURS.map(({ colour, swatch, shots: n, folder }) => {
+    const dir = folder ?? colour.toLowerCase().replace(/\s+/g, "-");
+    return {
+      id: `small-text-logo-tee-${dir}`,
+      colour,
+      swatch,
+      price: null,
+      images: shots("small-text-logo-tee", dir, n),
+      skus: skuRun("t-shirts", "small-text-logo", colour),
+    };
+  }),
 };
 
 export const seedCatalog: Product[] = [
@@ -516,6 +593,62 @@ export const seedCatalog: Product[] = [
     ],
   },
 ];
+
+/**
+ * Every garment's cloth must match the standard its number was issued against,
+ * and no two numbers may describe the same cloth.
+ *
+ * This is the check that was missing when two different browns were both sold
+ * as 02. It runs at module load, in every process that reads the catalog, for
+ * the same reason the sku uniqueness check does: the alternative to failing
+ * here is a customer opening the wrong parcel.
+ *
+ * Only products carrying numeric skus are checked. A showcase placeholder has
+ * no photographed standard to be measured against, and inventing a tolerance
+ * for a colour nobody has dyed yet would be theatre.
+ */
+(function assertColoursDistinct() {
+  const standards = new Map(COLOUR_STANDARDS.map((c) => [c.name, c]));
+
+  for (const p of seedCatalog) {
+    for (const v of p.variants) {
+      if (!/^\d{10}$/.test(v.skus[0]?.id ?? "")) continue;
+      const std = standards.get(v.colour);
+      if (!std) {
+        throw new Error(`${p.name} / ${v.colour}: no colour standard. Add it to COLOUR_STANDARDS.`);
+      }
+      if (!std.standard) continue;
+      const d = deltaE(v.swatch, std.standard);
+      if (d >= DIFFERENT_CLOTH) {
+        throw new Error(
+          `${p.name} / ${v.colour} (${v.swatch}) is dE ${d.toFixed(1)} from colour ` +
+          `${std.number}'s standard ${std.standard}. That is a different cloth ` +
+          `wearing the same number. Give it its own number in COLOUR_STANDARDS.`
+        );
+      }
+      if (d > SAME_CLOTH) {
+        console.warn(
+          `Colour ${std.number} ${v.colour}: ${p.name} measures dE ${d.toFixed(1)} ` +
+          `from the standard. Under ${DIFFERENT_CLOTH}, so allowed, but worth a look.`
+        );
+      }
+    }
+  }
+
+  const withStd = COLOUR_STANDARDS.filter((c) => c.standard);
+  for (let i = 0; i < withStd.length; i++) {
+    for (let j = i + 1; j < withStd.length; j++) {
+      const d = deltaE(withStd[i].standard!, withStd[j].standard!);
+      if (d <= SAME_CLOTH) {
+        throw new Error(
+          `Colours ${withStd[i].number} ${withStd[i].name} and ${withStd[j].number} ` +
+          `${withStd[j].name} are only dE ${d.toFixed(1)} apart -- that is one cloth ` +
+          `holding two numbers. Merge them.`
+        );
+      }
+    }
+  }
+})();
 
 /**
  * No two garments may share a SKU. This is the one error in the scheme that
