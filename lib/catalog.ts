@@ -106,7 +106,15 @@ export type SwatchName = (typeof swatchPalette)[number]["name"];
 
 const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
-/** Builds a full size run for a variant. Showcase mode: everything in stock. */
+/**
+ * Size run for a SHOWCASE product -- one of the placeholder garments that has
+ * never been assigned a ProductType and is not in the live catalog.
+ *
+ * These get a descriptive id rather than a SKU number on purpose: a number
+ * from the scheme below is a commitment (it goes on a picking list and never
+ * changes), and nothing here is real enough to commit to. The day one of these
+ * becomes a product, it gets a type and moves to skuRun like everything sold.
+ */
 function sizeRun(variantId: string, sizes: string[] = SHIRT_SIZES): Sku[] {
   return sizes.map((size) => ({
     id: `${variantId}-${size.toLowerCase()}`,
@@ -143,36 +151,110 @@ export function cardSrc(src: string): string {
 }
 
 /**
- * SKU id.
+ * SKU number.
  *
- *   MUR-TS-LT-BLK-M
- *       │  │  │   └── size
- *       │  │  └────── colourway
- *       │  └───────── print treatment: LT, SL, STL
- *       └──────────── garment: TS, HD, SW, PF, SK, TR
+ *   2690001001
+ *   ││ ││ │ ││ └┴┴─ size        001-006
+ *   ││ ││ │ └┴───── colourway   01-99
+ *   ││ ││ └──────── treatment   0-9
+ *   ││ └┴────────── garment     90-99
+ *   └┴───────────── house code  26
  *
- * Readable in a picking list without decoding, sorts sensibly, and extends to
- * hoodies and socks without renumbering anything. A purely numeric scheme was
- * considered and can be carried alongside if an EPOS ever demands digits, but
- * a code a human can read prevents more errors than it costs.
+ * Ten digits, fixed width, no separators. Numeric because the code has to
+ * survive places a readable one does not: an accounts ledger, a stock count,
+ * an EPOS field that accepts digits only, a spreadsheet that would helpfully
+ * reinterpret MUR-TS-LT-BLK-M as something else. Fixed width so it sorts
+ * correctly as text and so a truncated code is obviously truncated.
+ *
+ * The numbers below are PERMANENT. A colourway keeps the number it was first
+ * given, for as long as the business exists -- the next new colour takes the
+ * next free number whatever its name, and nothing already issued moves. That
+ * is the whole point: a code that can be renumbered is a code that disagrees
+ * with last year's picking lists.
  */
-const COLOUR_CODE: Record<string, string> = {
-  Black: "BLK",
-  Brown: "BRN",
-  Burgundy: "BRG",
-  Charcoal: "CHR",
-  Grey: "GRY",
-  "Light Grey": "LGY",
-  Navy: "NVY",
-  Sand: "SND",
-  "Sky Blue": "SKY",
-  White: "WHT",
+const HOUSE = "26";
+
+/** Garment family. Keyed to ProductType so a new type cannot be sold under a
+ *  number nobody assigned. */
+const GARMENT_NUMBER: Record<ProductType, string> = {
+  "t-shirts": "90",
+  hoodies: "91",
+  sweatshirts: "92",
+  socks: "93",
+  "trunks-boxers": "94",
+  jeans: "95",
+  "puffer-jackets": "96",
 };
 
-function skuRun(garment: string, treatment: string, colour: string): Sku[] {
-  const code = COLOUR_CODE[colour] ?? colour.slice(0, 3).toUpperCase();
-  return SHIRT_SIZES.map((size) => ({
-    id: `MUR-${garment}-${treatment}-${code}-${size}`,
+/** Print treatment. 9 is the garment with no print, not a missing value. */
+const TREATMENT_NUMBER = {
+  "large-text": "0",
+  "small-logo": "1",
+  "small-text-logo": "2",
+  none: "9",
+} as const;
+type TreatmentKey = keyof typeof TREATMENT_NUMBER;
+
+/** Colourways, in the order they were first issued. Append only. */
+const COLOUR_NUMBER: Record<string, string> = {
+  Black: "01",
+  Brown: "02",
+  Burgundy: "03",
+  Charcoal: "04",
+  Grey: "05",
+  Navy: "06",
+  Sand: "07",
+  "Sky Blue": "08",
+  White: "09",
+  // Colours that predate the numbering, on products still carrying provisional
+  // data. They take the next free numbers rather than displacing anything.
+  "Light Blue": "10",
+  "Light Grey": "11",
+  "Dark Grey": "12",
+  "Dark Brown": "13",
+  Beige: "14",
+  Chambray: "15",
+  Violet: "16",
+};
+
+/** Sizes. Three digits because a waist or a shoe size will not fit in two. */
+const SIZE_NUMBER: Record<string, string> = {
+  XS: "001",
+  S: "002",
+  M: "003",
+  L: "004",
+  XL: "005",
+  XXL: "006",
+};
+
+/**
+ * An unnumbered colour or size is a mistake, not something to improvise a code
+ * for. The old scheme silently fell back to the first three letters of the
+ * name, which quietly issues one code to two garments -- "Grey Marl" and
+ * "Green" both being GRE. A duplicate SKU is found by a customer receiving the
+ * wrong thing, so it fails here instead.
+ */
+function skuNumber(
+  type: ProductType,
+  treatment: TreatmentKey,
+  colour: string,
+  size: string
+): string {
+  const c = COLOUR_NUMBER[colour];
+  const z = SIZE_NUMBER[size];
+  if (!c) throw new Error(`No SKU number for colour "${colour}" -- add it to COLOUR_NUMBER.`);
+  if (!z) throw new Error(`No SKU number for size "${size}" -- add it to SIZE_NUMBER.`);
+  return `${HOUSE}${GARMENT_NUMBER[type]}${TREATMENT_NUMBER[treatment]}${c}${z}`;
+}
+
+function skuRun(
+  type: ProductType,
+  treatment: TreatmentKey,
+  colour: string,
+  sizes: string[] = SHIRT_SIZES
+): Sku[] {
+  return sizes.map((size) => ({
+    id: skuNumber(type, treatment, colour, size),
     size,
     inStock: true,
     stock: null,
@@ -225,7 +307,7 @@ const largeTextTee: Product = {
     swatch,
     price: null,
     images: shots("large-text-tee", colour.toLowerCase().replace(/\s+/g, "-"), n),
-    skus: skuRun("TS", "LT", colour),
+    skus: skuRun("t-shirts", "large-text", colour),
   })),
 };
 
@@ -278,7 +360,7 @@ const smallTextLogoTee: Product = {
     swatch,
     price: null,
     images: shots("small-text-logo-tee", colour.toLowerCase().replace(/\s+/g, "-"), n),
-    skus: skuRun("TS", "STL", colour),
+    skus: skuRun("t-shirts", "small-text-logo", colour),
   })),
 };
 
@@ -434,6 +516,29 @@ export const seedCatalog: Product[] = [
     ],
   },
 ];
+
+/**
+ * No two garments may share a SKU. This is the one error in the scheme that
+ * the business finds out about from a customer holding the wrong item, so it
+ * is checked where it cannot be skipped -- at module load, in every process
+ * that reads the catalog.
+ */
+(function assertSkusUnique() {
+  const seen = new Map<string, string>();
+  for (const p of seedCatalog) {
+    for (const v of p.variants) {
+      for (const s of v.skus) {
+        const here = `${p.name} / ${v.colour} / ${s.size}`;
+        const there = seen.get(s.id);
+        if (there) {
+          throw new Error(`Duplicate SKU ${s.id}: ${there} and ${here}`);
+        }
+        seen.set(s.id, here);
+      }
+    }
+  }
+})();
+
 
 // ---------------------------------------------------------------------------
 // Derived helpers — one place, so the PLP card, the PDP and the checkout all
