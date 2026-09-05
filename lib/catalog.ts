@@ -161,6 +161,7 @@ const COLOUR_CODE: Record<string, string> = {
   Brown: "BRN",
   Burgundy: "BRG",
   Charcoal: "CHR",
+  Grey: "GRY",
   "Light Grey": "LGY",
   Navy: "NVY",
   Sand: "SND",
@@ -228,8 +229,62 @@ const largeTextTee: Product = {
   })),
 };
 
+/** Colourways of the Small.Text-Logo tee. Swatches measured off each flat lay
+ *  the same way as the Large.Text set above, so the two products' chips are
+ *  comparable rather than merely both plausible.
+ *
+ *  `shots` counts what the engine actually rendered for that colour, which is
+ *  not uniform: some colourways were shot with a back view and some were not,
+ *  and Charcoal, Navy, Sand, Sky Blue and White have no seventh frame. Writing
+ *  the real number per colour keeps the gallery from linking to a file that was
+ *  never made. */
+const SMALL_TEXT_COLOURS: { colour: string; swatch: string; shots: number }[] = [
+  { colour: "Black", swatch: "#1D1D1C", shots: 5 },
+  { colour: "Brown", swatch: "#573829", shots: 6 },
+  { colour: "Burgundy", swatch: "#5A1624", shots: 6 },
+  { colour: "Charcoal", swatch: "#49494B", shots: 5 },
+  { colour: "Grey", swatch: "#A4A4A6", shots: 6 },
+  { colour: "Navy", swatch: "#1A2134", shots: 5 },
+  { colour: "Sand", swatch: "#DFCDB5", shots: 5 },
+  { colour: "Sky Blue", swatch: "#C7DDF3", shots: 5 },
+  { colour: "White", swatch: "#F1F1F2", shots: 4 },
+];
+
+const smallTextLogoTee: Product = {
+  id: "small-text-logo-tee",
+  slug: "small-text-logo-tee",
+  name: "Small Text Logo Tee",
+  category: "men",
+  type: "t-shirts",
+  // PROVISIONAL COPY — written to get the product on the page. Every string
+  // in this product is placeholder and is for the designers to replace with
+  // the real description, details and price.
+  description:
+    "The crest and wordmark, set small at the left chest. Mid-weight cotton "
+    + "jersey with a set-in sleeve and a ribbed crew that holds its shape. "
+    + "Woven label at the nape. Nine colourways.",
+  details: [
+    "PROVISIONAL — copy and price to be replaced by the design team",
+    "100% cotton jersey",
+    "Regular fit",
+    "Ribbed crew neck, woven neck label",
+    "Machine wash cold, dry flat",
+  ],
+  badges: ["NEW ARRIVAL"],
+  price: 3500,
+  variants: SMALL_TEXT_COLOURS.map(({ colour, swatch, shots: n }) => ({
+    id: `small-text-logo-tee-${colour.toLowerCase().replace(/\s+/g, "-")}`,
+    colour,
+    swatch,
+    price: null,
+    images: shots("small-text-logo-tee", colour.toLowerCase().replace(/\s+/g, "-"), n),
+    skus: skuRun("TS", "STL", colour),
+  })),
+};
+
 export const seedCatalog: Product[] = [
   largeTextTee,
+  smallTextLogoTee,
   {
     id: "linen-shirt",
     slug: "custom-fit-linen-shirt",
