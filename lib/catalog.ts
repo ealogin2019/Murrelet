@@ -270,17 +270,41 @@ function deltaE(a: string, b: string): number {
 }
 
 /**
- * Thresholds, set from the measurements rather than picked.
+ * Thresholds, and an honest account of what they can and cannot decide.
  *
- * Across the seven colourways photographed twice, shoot-to-shoot variation of
- * the SAME cloth measured 0.7 to 4.1. The two genuine mismatches measured 8.9
- * and 11.6. So anything at or under 5 is the same cloth photographed twice,
- * and anything at or over 8 is a different cloth. The gap between the two is
- * deliberately left as a warning band: it is where a real question lives, and
- * a number should not be issued on a coin toss.
+ * WITHIN ONE SHOOT the measurement is sharp. Across the seven tee colourways
+ * photographed twice under one setup, the same cloth varied 0.7 to 4.1 and the
+ * two genuine mismatches were 8.9 and 11.6 -- clean separation.
+ *
+ * ACROSS SHOOTS it collapses. The hoodie photography used two lighting setups,
+ * and one sky blue garment measured 18.7 apart between them -- further than
+ * Grey is from Light Grey (10.7), which are different colours. Tested against
+ * every pair whose answer is known:
+ *
+ *     metric        same cloth up to   different cloth from   separates?
+ *     CIE76                    18.7                    9.0    no
+ *     CMC(2:1)                 12.4                    4.5    no
+ *     nearest/runner-up margin -- called the real two-browns bug "confident"
+ *     at 1.86x while flagging a correct assignment at 1.03x
+ *
+ * CMC(2:1) is the textile standard and de-weights lightness by design; it did
+ * not help, because a second lighting setup moves chroma as well. The overlap
+ * is not a tuning problem. So:
+ *
+ *   BLOCKING   two standards within SAME_CLOTH of each other. One cloth
+ *              holding two numbers is decidable from the standards alone, no
+ *              photography involved, and it is the error that mis-picks
+ *              orders.
+ *
+ *   ADVISORY   a garment measuring far from its own standard. This is the
+ *              check that found the two browns, and it is worth keeping --
+ *              but as something that raises a candidate for a person to look
+ *              at, not as something that refuses a build. Making it blocking
+ *              would have rejected a correct sky blue, and a check that cries
+ *              wolf gets overridden, which is worse than no check.
  */
 const SAME_CLOTH = 5;
-const DIFFERENT_CLOTH = 8;
+const FAR_FROM_STANDARD = 8;
 
 /** Sizes. Three digits because a waist or a shoe size will not fit in two. */
 const SIZE_NUMBER: Record<string, string> = {
@@ -681,17 +705,12 @@ export const seedCatalog: Product[] = [
       }
       if (!std.standard) continue;
       const d = deltaE(v.swatch, std.standard);
-      if (d >= DIFFERENT_CLOTH) {
-        throw new Error(
-          `${p.name} / ${v.colour} (${v.swatch}) is dE ${d.toFixed(1)} from colour ` +
-          `${std.number}'s standard ${std.standard}. That is a different cloth ` +
-          `wearing the same number. Give it its own number in COLOUR_STANDARDS.`
-        );
-      }
-      if (d > SAME_CLOTH) {
+      if (d >= FAR_FROM_STANDARD) {
         console.warn(
           `Colour ${std.number} ${v.colour}: ${p.name} measures dE ${d.toFixed(1)} ` +
-          `from the standard. Under ${DIFFERENT_CLOTH}, so allowed, but worth a look.`
+          `from the standard ${std.standard}. Either a different cloth wearing ` +
+          `this number, or the same cloth under different light — the measurement ` +
+          `cannot tell those apart. Worth an eye before it ships.`
         );
       }
     }
