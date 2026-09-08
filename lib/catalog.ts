@@ -441,9 +441,71 @@ const smallTextLogoTee: Product = {
   }),
 };
 
+/** Colourways of the Small.Logo tee — the crest alone, no wordmark.
+ *
+ *  Three of these carry a `folder` because the SHOOT's folder name and the
+ *  colour standard disagree, and the standard wins: this shoot's "Brown" is
+ *  Chestnut to dE 0.0, its "Charcoal" is Graphite to 0.4, and the "Light Grey"
+ *  folder holds the cloth sold as Grey (dE 0.0 against Grey, 10.7 from Light
+ *  Grey). Measured, not assumed — assertColoursDistinct rejects the build if a
+ *  garment's cloth does not match the number it claims.
+ */
+const SMALL_LOGO_COLOURS: {
+  colour: string;
+  swatch: string;
+  shots: number;
+  folder?: string;
+}[] = [
+  { colour: "Black", swatch: "#1D1D1C", shots: 4 },
+  { colour: "Chestnut", swatch: "#573829", shots: 4, folder: "brown" },
+  { colour: "Burgundy", swatch: "#5A1624", shots: 4 },
+  { colour: "Graphite", swatch: "#49494B", shots: 4, folder: "charcoal" },
+  { colour: "Grey", swatch: "#A4A4A6", shots: 4, folder: "light-grey" },
+  { colour: "Navy", swatch: "#1A2134", shots: 3 },
+  { colour: "Sand", swatch: "#DFCDB5", shots: 5 },
+  { colour: "Sky Blue", swatch: "#C7DDF3", shots: 4 },
+  { colour: "White", swatch: "#F1F1F2", shots: 3 },
+];
+
+const smallLogoTee: Product = {
+  id: "small-logo-tee",
+  slug: "small-logo-tee",
+  name: "Small Logo Tee",
+  category: "men",
+  type: "t-shirts",
+  // PROVISIONAL COPY — written to get the product on the page. Every string
+  // in this product is placeholder and is for the designers to replace with
+  // the real description, details and price.
+  description:
+    "The crest alone, set small at the left chest. Mid-weight cotton jersey "
+    + "with a set-in sleeve and a ribbed crew that holds its shape. Woven "
+    + "label at the nape. Nine colourways.",
+  details: [
+    "PROVISIONAL — copy and price to be replaced by the design team",
+    "100% cotton jersey",
+    "Regular fit",
+    "Ribbed crew neck, woven neck label",
+    "Machine wash cold, dry flat",
+  ],
+  badges: ["NEW ARRIVAL"],
+  price: 3500,
+  variants: SMALL_LOGO_COLOURS.map(({ colour, swatch, shots: n, folder }) => {
+    const dir = folder ?? colour.toLowerCase().replace(/\s+/g, "-");
+    return {
+      id: `small-logo-tee-${dir}`,
+      colour,
+      swatch,
+      price: null,
+      images: shots("small-logo-tee", dir, n),
+      skus: skuRun("t-shirts", "small-logo", colour),
+    };
+  }),
+};
+
 export const seedCatalog: Product[] = [
   largeTextTee,
   smallTextLogoTee,
+  smallLogoTee,
   {
     id: "linen-shirt",
     slug: "custom-fit-linen-shirt",
