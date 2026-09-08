@@ -68,7 +68,10 @@ function unauthorized(message: string) {
   return new NextResponse(message, {
     status: 401,
     headers: {
-      "WWW-Authenticate": 'Basic realm="Murrelet — in development", charset="UTF-8"',
+      // ASCII only. A header value is a byte string, and the em dash that was
+      // here first got the whole header dropped in transit -- leaving a bare
+      // 401 with no prompt, which locks out the people who HAVE the password.
+      "WWW-Authenticate": 'Basic realm="Murrelet - in development", charset="UTF-8"',
       "Cache-Control": "no-store",
       "X-Robots-Tag": "noindex, nofollow, noarchive",
     },
