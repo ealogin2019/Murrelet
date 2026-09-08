@@ -42,12 +42,83 @@ async function verifySessionToken(token: string | undefined | null): Promise<boo
   return timingSafeEqualStr(sig, expectedSig);
 }
 
+/**
+ * While the store is in development the WHOLE site sits behind a password,
+ * not just /admin.
+ *
+ * Two exemptions, both deliberate:
+ *
+ *   /api/stripe/webhook   Stripe cannot present a password. It authenticates
+ *                         with a signature over the raw body instead, which is
+ *                         stronger than basic auth, and gating it would mean
+ *                         paid orders silently never reach the database.
+ *
+ *   _next/static, images  Served before middleware in most cases and useless
+ *                         on their own; gating them only breaks the login
+ *                         prompt's own styling.
+ *
+ * Fails CLOSED. If SITE_PASSWORD is missing in production the site refuses
+ * everyone rather than quietly serving to the public -- a typo in an
+ * environment variable should not be the difference between private and
+ * launched. Development is never gated, so local work is unaffected.
+ */
+const PUBLIC_PREFIXES = ["/api/stripe/webhook"];
+
+function unauthorized(message: string) {
+  return new NextResponse(message, {
+    status: 401,
+    headers: {
+      "WWW-Authenticate": 'Basic realm="Murrelet — in development", charset="UTF-8"',
+      "Cache-Control": "no-store",
+      "X-Robots-Tag": "noindex, nofollow, noarchive",
+    },
+  });
+}
+
+function sitePasswordOk(req: NextRequest): boolean | null {
+  if (process.env.NODE_ENV === "development") return true;
+  const expected = process.env.SITE_PASSWORD;
+  if (!expected) return null; // misconfigured -- fail closed, say so
+  const header = req.headers.get("authorization");
+  if (!header?.startsWith("Basic ")) return false;
+  let decoded: string;
+  try {
+    decoded = atob(header.slice(6));
+  } catch {
+    return false;
+  }
+  const i = decoded.indexOf(":");
+  if (i < 0) return false;
+  const user = decoded.slice(0, i);
+  const pass = decoded.slice(i + 1);
+  const expectedUser = process.env.SITE_USER || "murrelet";
+  // Compare both, and always both, so the reply time does not say which was wrong.
+  const okUser = timingSafeEqualStr(user, expectedUser);
+  const okPass = timingSafeEqualStr(pass, expected);
+  return okUser && okPass;
+}
+
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  if (!PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {
+    const ok = sitePasswordOk(req);
+    if (ok === null) {
+      return new NextResponse(
+        "This site is private and SITE_PASSWORD is not configured.",
+        { status: 503, headers: { "Cache-Control": "no-store", "X-Robots-Tag": "noindex" } }
+      );
+    }
+    if (!ok) return unauthorized("Authentication required.");
+  }
+
+  if (!pathname.startsWith("/admin") && !pathname.startsWith("/api/admin")) {
+    return NextResponse.next();
+  }
 
   // Let the login page and the login/logout API routes through unauthenticated.
   if (
