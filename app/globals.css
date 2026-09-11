@@ -615,26 +615,15 @@ img {
   height: 64px;
 }
 
-.admin-tabs {
-  display: flex;
-  gap: 8px;
+/* Where the tab strip was. The homepage-carousel tab is gone: nothing on the
+   site has rendered those slides since the static hero replaced the carousel,
+   so it was a control that saved happily and changed nothing. */
+.admin-count {
   flex: 1;
-}
-
-.admin-tab {
-  border: 1px solid var(--line);
-  background: transparent;
-  padding: 7px 14px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  cursor: pointer;
+  margin: 0;
+  font-size: 0.76rem;
   color: var(--muted);
-}
-
-.admin-tab.is-active {
-  background: var(--ink);
-  color: #fff;
-  border-color: var(--ink);
+  letter-spacing: 0.03em;
 }
 
 .admin-logout {
@@ -651,17 +640,66 @@ img {
   padding: 28px 24px 100px;
 }
 
-.admin-banner {
-  padding: 12px 16px;
-  border-radius: 2px;
-  font-size: 0.85rem;
-  margin-bottom: 18px;
-  /* Stays on screen while editing a long product list, rather than
-     scrolling out of view right after the save it's explaining. */
-  position: sticky;
-  top: 12px;
-  z-index: 5;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+/* Toasts, where a sticky banner used to be. The banner held one message at a
+   time and pushed the page down as it appeared; two failed uploads in a row
+   showed only the second. These stack, and only successes expire. */
+.admin-toasts {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(420px, calc(100vw - 40px));
+}
+
+.admin-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 3px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+  animation: admin-toast-in 0.18s ease-out;
+}
+
+@keyframes admin-toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-toast { animation: none; }
+}
+
+.admin-toast.is-ok {
+  background: #eef3ea;
+  color: #3a5a2d;
+  border: 1px solid #cfdec5;
+}
+
+.admin-toast.is-error {
+  background: #fbeaea;
+  color: #a5312a;
+  border: 1px solid #eccccb;
+}
+
+.admin-toast-close {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  opacity: 0.65;
+}
+
+.admin-toast-close:hover {
+  opacity: 1;
 }
 
 /* Flashes the exact colour row a blocked save points at, so the fix is
@@ -679,26 +717,40 @@ img {
   .admin-variant-flash { animation: none; }
 }
 
-.admin-banner.is-ok {
-  background: #eef3ea;
-  color: #3a5a2d;
-}
-
-.admin-banner.is-error {
-  background: #fbeaea;
-  color: #a5312a;
-}
-
-.admin-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-bottom: 18px;
+/* The one bar that acts on the whole page, pinned under the topbar so "Save
+   changes" is reachable from anywhere in a long list. */
+.admin-actionbar {
   position: sticky;
   top: 64px;
+  z-index: 9;
   background: var(--bg);
-  padding: 10px 0;
-  z-index: 5;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-actionbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+}
+
+.admin-actionbar-left,
+.admin-actionbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-dirty {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.admin-dirty.is-on {
+  color: #a5312a;
 }
 
 .admin-btn {
@@ -712,15 +764,26 @@ img {
   color: var(--ink);
 }
 
+.admin-btn:hover {
+  border-color: var(--ink);
+}
+
 .admin-btn-primary {
   background: var(--ink);
   color: #fff;
   border-color: var(--ink);
 }
 
+.admin-btn-quiet {
+  color: var(--muted);
+  padding: 8px 12px;
+}
+
+.admin-btn:disabled,
 .admin-btn-primary:disabled {
-  opacity: 0.6;
+  opacity: 0.45;
   cursor: not-allowed;
+  border-color: var(--line);
 }
 
 .admin-table {
@@ -729,63 +792,149 @@ img {
   gap: 14px;
 }
 
-.admin-row {
-  display: grid;
-  grid-template-columns: 90px 1fr auto;
-  gap: 16px;
-  align-items: flex-start;
-  padding: 16px;
+/* A product is a CARD with a head you can always read and a body you open.
+   The page used to render every field of every colourway at once -- with four
+   products that is roughly forty photo wells and two hundred inputs on one
+   scroll, and finding the thing you came to change took longer than changing
+   it. */
+.admin-card {
   border: 1px solid var(--line);
   border-radius: 4px;
   background: #fff;
+  overflow: hidden;
+}
+
+.admin-card.is-open {
+  border-color: var(--ink);
+}
+
+.admin-card-head {
+  display: grid;
+  grid-template-columns: 28px 64px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.admin-disclose {
+  border: none;
+  background: transparent;
+  font-size: 0.8rem;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px;
+  line-height: 1;
+}
+
+.admin-card-summary h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.admin-card-summary p {
+  margin: 2px 0 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.admin-chip-row {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.admin-chip {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+}
+
+.admin-card-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-card-body {
+  border-top: 1px solid var(--line);
+  padding: 4px 16px 16px;
+}
+
+.admin-section {
+  padding: 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-section + .admin-section {
+  border-top: 1px solid var(--line);
+}
+
+.admin-section-title {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.admin-section-hint {
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.admin-field-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-field > span {
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.admin-field-wide {
+  grid-column: span 4;
+}
+
+.admin-input-price {
+  max-width: 130px;
 }
 
 .admin-thumb {
   position: relative;
-  width: 90px;
-  height: 110px;
+  width: 64px;
+  height: 80px;
   border-radius: 2px;
   overflow: hidden;
   background: var(--card-bg);
-  cursor: pointer;
   display: block;
-}
-
-.admin-thumb-wide {
-  width: 140px;
-  height: 90px;
 }
 
 .admin-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.admin-thumb span {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(20, 18, 15, 0.72);
-  color: #fff;
-  font-size: 0.62rem;
-  text-align: center;
-  padding: 3px 0;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.admin-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.admin-fields-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1.4fr;
-  gap: 8px;
 }
 
 .admin-input {
@@ -799,12 +948,6 @@ img {
   width: 100%;
 }
 
-.admin-price-preview {
-  font-size: 0.78rem;
-  color: var(--muted);
-  margin: 0;
-}
-
 .admin-delete {
   border: 1px solid var(--line);
   background: transparent;
@@ -816,32 +959,31 @@ img {
   height: fit-content;
 }
 
-.admin-slide-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.admin-move {
-  border: 1px solid var(--line);
-  background: transparent;
-  width: 32px;
-  height: 32px;
-  border-radius: 2px;
-  cursor: pointer;
-}
-
-.admin-move:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
+@media (max-width: 900px) {
+  .admin-field-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .admin-field-wide {
+    grid-column: span 2;
+  }
 }
 
 @media (max-width: 700px) {
-  .admin-row {
-    grid-template-columns: 1fr;
+  .admin-card-head {
+    grid-template-columns: 24px 48px 1fr;
+    row-gap: 10px;
   }
-  .admin-fields-row {
+  .admin-card-head-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+  .admin-field-grid,
+  .admin-field-wide {
     grid-template-columns: 1fr;
+    grid-column: span 1;
+  }
+  .admin-actionbar-inner {
+    flex-wrap: wrap;
   }
 }
 
@@ -1227,18 +1369,6 @@ img {
   cursor: default;
 }
 
-.admin-variants {
-  border-top: 1px solid var(--line);
-  margin-top: 12px;
-  padding-top: 12px;
-}
-
-.admin-variants-label {
-  font-size: 0.72rem;
-  color: var(--muted);
-  margin: 0 0 8px;
-}
-
 .admin-variant {
   padding: 10px 0;
   border-bottom: 1px solid var(--line);
@@ -1274,16 +1404,55 @@ img {
 
 .admin-image-thumb {
   position: relative;
-  width: 52px;
-  height: 66px;
+  width: 64px;
+  height: 82px;
   flex: none;
   background: var(--card-bg);
+  border: 2px solid transparent;
+}
+
+/* The photo the storefront will use on the card. Shown as a state on the
+   image itself rather than named in a separate field, because "which picture
+   is the thumbnail" is a question you ask while looking at the pictures. */
+.admin-image-thumb.is-thumb {
+  border-color: var(--ink);
 }
 
 .admin-image-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.admin-image-pick {
+  position: absolute;
+  left: -6px;
+  top: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  border: 1.5px solid var(--line);
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.admin-image-pick:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.admin-image-thumb.is-thumb .admin-image-pick {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+  cursor: default;
 }
 
 .admin-image-remove {
@@ -1306,8 +1475,8 @@ img {
 }
 
 .admin-image-add {
-  width: 52px;
-  height: 66px;
+  width: 64px;
+  height: 82px;
   flex: none;
   display: flex;
   align-items: center;

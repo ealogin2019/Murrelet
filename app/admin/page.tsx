@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Product,
@@ -10,9 +10,8 @@ import {
   categoryLabels,
   productTypes,
   productTypeLabels,
-  swatchPalette,
+  colourOptions,
 } from "@/lib/catalog";
-import { HeroSlide } from "@/lib/hero";
 import { formatPrice } from "@/lib/format";
 
 const CATEGORIES = categories;
@@ -30,39 +29,83 @@ function newId() {
   return `p-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 }
 
+type Toast = { id: number; kind: "ok" | "error"; text: string };
+
 export default function AdminPage() {
   const router = useRouter();
-  const [tab, setTab] = useState<"products" | "hero">("products");
   const [products, setProducts] = useState<Product[]>([]);
-  const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  /** Which products are expanded. Collapsed is the default: the page is a
+   *  list of products first and an editor second, and nine colourways of six
+   *  sizes each is several screens of fields nobody asked to see. */
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  /** Edits made since the last successful save. Drives the save button's
+   *  state and the leave-the-page warning. */
+  const [dirty, setDirty] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/admin/products").then((r) => r.json()),
-      fetch("/api/admin/hero").then((r) => r.json()),
-    ])
-      .then(([p, h]) => {
-        setProducts(p.products || []);
-        setSlides(h.slides || []);
-      })
-      .finally(() => setLoading(false));
+  const toastSeq = useRef(0);
+
+  const toast = useCallback((kind: Toast["kind"], text: string) => {
+    const id = ++toastSeq.current;
+    setToasts((prev) => [...prev, { id, kind, text }]);
+    // Successes announce themselves and leave. Errors stay until dismissed --
+    // a failed save that vanishes after four seconds is a failed save nobody
+    // reads.
+    if (kind === "ok") {
+      setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
+    }
   }, []);
 
+  const dismissToast = (id: number) =>
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+
+  useEffect(() => {
+    fetch("/api/admin/products")
+      .then((r) => r.json())
+      .then((p) => setProducts(p.products || []))
+      .catch(() => toast("error", "Could not load the catalogue."))
+      .finally(() => setLoading(false));
+  }, [toast]);
+
+  // Closing the tab mid-edit loses everything -- nothing here autosaves.
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
   async function handleLogout() {
+    if (dirty && !confirm("You have unsaved changes. Log out anyway?")) return;
     await fetch("/api/admin/logout", { method: "POST" });
     router.push("/admin/login");
   }
 
+  /** Every mutation goes through here, so `dirty` cannot drift from reality. */
+  function edit(fn: (prev: Product[]) => Product[]) {
+    setProducts(fn);
+    setDirty(true);
+  }
+
+  function toggleOpen(id: string) {
+    setOpen((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
   function updateProduct(id: string, patch: Partial<Product>) {
-    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    edit((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
   }
 
   function updateVariant(productId: string, variantId: string, patch: Partial<Variant>) {
-    setProducts((prev) =>
+    edit((prev) =>
       prev.map((p) =>
         p.id === productId
           ? {
@@ -76,13 +119,17 @@ export default function AdminPage() {
     );
   }
 
-  function newVariant(productId: string, sizes: string[], colour = swatchPalette[0].name): Variant {
+  function newVariant(
+    productId: string,
+    sizes: string[],
+    colour = colourOptions[0].name
+  ): Variant {
     const id = `${productId}-${slugify(colour)}-${Math.floor(Math.random() * 1000)}`;
-    const swatch = swatchPalette.find((s) => s.name === colour)?.hex ?? swatchPalette[0].hex;
+    const standard = colourOptions.find((c) => c.name === colour);
     return {
       id,
       colour,
-      swatch,
+      swatch: standard?.hex ?? "#CCCCCC",
       price: null,
       images: [],
       // Every colour needs a size run — the API rejects a variant with none.
@@ -105,7 +152,7 @@ export default function AdminPage() {
   }
 
   function addVariant(productId: string) {
-    setProducts((prev) =>
+    edit((prev) =>
       prev.map((p) =>
         p.id === productId
           ? { ...p, variants: [...p.variants, newVariant(productId, currentSizes(p))] }
@@ -123,7 +170,7 @@ export default function AdminPage() {
   function updateProductSizes(productId: string, raw: string) {
     const sizes = raw.split(",").map((s) => s.trim()).filter(Boolean);
     if (sizes.length === 0) return;
-    setProducts((prev) =>
+    edit((prev) =>
       prev.map((p) => {
         if (p.id !== productId) return p;
         return {
@@ -147,11 +194,11 @@ export default function AdminPage() {
     // A product with no colours has nothing to render or sell, and the API
     // refuses to save it — block it here so the error is understandable.
     if (product && product.variants.length <= 1) {
-      setError("A product needs at least one colour. Delete the product instead.");
+      toast("error", "A product needs at least one colour. Delete the product instead.");
       return;
     }
     if (!confirm("Delete this colour? This can't be undone once saved.")) return;
-    setProducts((prev) =>
+    edit((prev) =>
       prev.map((p) =>
         p.id === productId
           ? { ...p, variants: p.variants.filter((v) => v.id !== variantId) }
@@ -174,12 +221,13 @@ export default function AdminPage() {
       badges: [],
       variants: [newVariant(id, DEFAULT_SIZES)],
     };
-    setProducts((prev) => [p, ...prev]);
+    edit((prev) => [p, ...prev]);
+    setOpen((prev) => new Set(prev).add(id));
   }
 
   function deleteProduct(id: string) {
     if (!confirm("Delete this product? This can't be undone once saved.")) return;
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+    edit((prev) => prev.filter((p) => p.id !== id));
   }
 
   async function uploadFile(file: File, folder: string): Promise<string> {
@@ -197,7 +245,7 @@ export default function AdminPage() {
   // photos can upload concurrently and must not clobber one another
   // regardless of which network request finishes first.
   function appendVariantImage(productId: string, variantId: string, url: string) {
-    setProducts((prev) =>
+    edit((prev) =>
       prev.map((p) =>
         p.id === productId
           ? {
@@ -212,7 +260,7 @@ export default function AdminPage() {
   }
 
   function removeVariantImage(productId: string, variantId: string, index: number) {
-    setProducts((prev) =>
+    edit((prev) =>
       prev.map((p) =>
         p.id === productId
           ? {
@@ -228,20 +276,49 @@ export default function AdminPage() {
     );
   }
 
+  /**
+   * The product's card photo, set from any image under it in one click.
+   *
+   * There is no `thumbnail` column, and adding one would put the same fact in
+   * two places. The storefront already has a rule: a card shows the FIRST
+   * image of the FIRST colour. So this moves the chosen photo to the front of
+   * its colour and that colour to the front of the product, which makes the
+   * rule produce the requested picture. The PDP opens on that colour too,
+   * which is what "the thumbnail" means to a customer anyway.
+   */
+  function makeThumbnail(productId: string, variantId: string, index: number) {
+    edit((prev) =>
+      prev.map((p) => {
+        if (p.id !== productId) return p;
+        const variants = p.variants.map((v) => {
+          if (v.id !== variantId || index === 0) return v;
+          const images = [...v.images];
+          const [picked] = images.splice(index, 1);
+          return { ...v, images: [picked, ...images] };
+        });
+        const i = variants.findIndex((v) => v.id === variantId);
+        if (i > 0) {
+          const [lead] = variants.splice(i, 1);
+          variants.unshift(lead);
+        }
+        return { ...p, variants };
+      })
+    );
+  }
+
+  const isThumbnail = (p: Product, v: Variant, i: number) =>
+    p.variants[0]?.id === v.id && i === 0;
+
   async function handleVariantImageAdd(productId: string, variantId: string, file: File) {
-    setError(null);
     try {
       const url = await uploadFile(file, "products");
       appendVariantImage(productId, variantId, url);
     } catch (err: any) {
-      setError(err.message || "Upload failed.");
+      toast("error", err.message || "Upload failed.");
     }
   }
 
   async function saveProducts() {
-    setStatus(null);
-    setError(null);
-
     // Mirror the server's photo check before spending a round trip on it.
     // "Save changes" saves every product in one request — a single colour
     // missing a photo used to fail that whole batch with only a banner as
@@ -252,13 +329,19 @@ export default function AdminPage() {
     for (const p of products) {
       const bareVariant = p.variants.find((v) => v.images.length === 0);
       if (bareVariant) {
-        setError(
+        toast(
+          "error",
           `"${bareVariant.colour}" on "${p.name}" has no photo yet — add one before saving. Nothing was saved, including any other changes in this batch.`
         );
-        const row = document.getElementById(`variant-${bareVariant.id}`);
-        row?.scrollIntoView({ behavior: "smooth", block: "center" });
-        row?.classList.add("admin-variant-flash");
-        setTimeout(() => row?.classList.remove("admin-variant-flash"), 1600);
+        // Expand the product first, or the row being pointed at is inside a
+        // collapsed card and the scroll lands on nothing.
+        setOpen((prev) => new Set(prev).add(p.id));
+        setTimeout(() => {
+          const row = document.getElementById(`variant-${bareVariant.id}`);
+          row?.scrollIntoView({ behavior: "smooth", block: "center" });
+          row?.classList.add("admin-variant-flash");
+          setTimeout(() => row?.classList.remove("admin-variant-flash"), 1600);
+        }, 60);
         return;
       }
     }
@@ -272,70 +355,10 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Save failed.");
-      setStatus("Saved. Changes are live now.");
+      setDirty(false);
+      toast("ok", "Saved. Changes are live now.");
     } catch (err: any) {
-      setError(err.message || "Save failed.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function updateSlide(id: string, patch: Partial<HeroSlide>) {
-    setSlides((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
-  }
-
-  function addSlide() {
-    const s: HeroSlide = {
-      id: `hero-${Date.now()}`,
-      image: "/images/fallback.svg",
-      eyebrow: "",
-      heading: "",
-      subheading: "",
-    };
-    setSlides((prev) => [...prev, s]);
-  }
-
-  function deleteSlide(id: string) {
-    if (!confirm("Remove this carousel slide?")) return;
-    setSlides((prev) => prev.filter((s) => s.id !== id));
-  }
-
-  function moveSlide(id: string, dir: -1 | 1) {
-    setSlides((prev) => {
-      const i = prev.findIndex((s) => s.id === id);
-      const j = i + dir;
-      if (i < 0 || j < 0 || j >= prev.length) return prev;
-      const next = [...prev];
-      [next[i], next[j]] = [next[j], next[i]];
-      return next;
-    });
-  }
-
-  async function handleSlideImage(id: string, file: File) {
-    setError(null);
-    try {
-      const url = await uploadFile(file, "hero");
-      updateSlide(id, { image: url });
-    } catch (err: any) {
-      setError(err.message || "Upload failed.");
-    }
-  }
-
-  async function saveHero() {
-    setSaving(true);
-    setStatus(null);
-    setError(null);
-    try {
-      const res = await fetch("/api/admin/hero", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slides }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Save failed.");
-      setStatus("Saved. Changes are live now.");
-    } catch (err: any) {
-      setError(err.message || "Save failed.");
+      toast("error", err.message || "Save failed.");
     } finally {
       setSaving(false);
     }
@@ -349,52 +372,75 @@ export default function AdminPage() {
     );
   }
 
+  const colourCount = products.reduce((n, p) => n + p.variants.length, 0);
+  const skuCount = products.reduce(
+    (n, p) => n + p.variants.reduce((m, v) => m + v.skus.length, 0),
+    0
+  );
+
   return (
     <div className="admin-page">
       <div className="admin-topbar">
         <div className="wrap admin-topbar-inner">
           <span className="logo">Murrelet Admin</span>
-          <div className="admin-tabs">
-            <button
-              className={`admin-tab ${tab === "products" ? "is-active" : ""}`}
-              onClick={() => setTab("products")}
-            >
-              Products ({products.length})
-            </button>
-            <button
-              className={`admin-tab ${tab === "hero" ? "is-active" : ""}`}
-              onClick={() => setTab("hero")}
-            >
-              Homepage carousel ({slides.length})
-            </button>
-          </div>
+          <p className="admin-count">
+            {products.length} products · {colourCount} colours · {skuCount} SKUs
+          </p>
           <button className="admin-logout" onClick={handleLogout}>
             Log out
           </button>
         </div>
       </div>
 
-      <div className="wrap admin-content">
-        {(status || error) && (
-          <div className={`admin-banner ${error ? "is-error" : "is-ok"}`}>
-            {error || status}
+      <div className="admin-actionbar">
+        <div className="wrap admin-actionbar-inner">
+          <div className="admin-actionbar-left">
+            <button className="admin-btn" onClick={addProduct}>
+              + Add product
+            </button>
+            <button
+              className="admin-btn admin-btn-quiet"
+              onClick={() =>
+                setOpen((prev) =>
+                  prev.size === products.length ? new Set() : new Set(products.map((p) => p.id))
+                )
+              }
+            >
+              {open.size === products.length ? "Collapse all" : "Expand all"}
+            </button>
           </div>
-        )}
+          <div className="admin-actionbar-right">
+            <span className={`admin-dirty ${dirty ? "is-on" : ""}`}>
+              {dirty ? "Unsaved changes" : "All changes saved"}
+            </span>
+            <button
+              className="admin-btn admin-btn-primary"
+              onClick={saveProducts}
+              disabled={saving || !dirty}
+            >
+              {saving ? "Saving…" : "Save changes"}
+            </button>
+          </div>
+        </div>
+      </div>
 
-        {tab === "products" && (
-          <>
-            <div className="admin-actions">
-              <button className="admin-btn" onClick={addProduct}>
-                + Add product
-              </button>
-              <button className="admin-btn admin-btn-primary" onClick={saveProducts} disabled={saving}>
-                {saving ? "Saving…" : "Save changes"}
-              </button>
-            </div>
+      <div className="wrap admin-content">
+        <div className="admin-table">
+          {products.map((p) => {
+            const expanded = open.has(p.id);
+            return (
+              <div className={`admin-card ${expanded ? "is-open" : ""}`} key={p.id}>
+                <div className="admin-card-head">
+                  <button
+                    type="button"
+                    className="admin-disclose"
+                    onClick={() => toggleOpen(p.id)}
+                    aria-expanded={expanded}
+                    aria-label={expanded ? `Collapse ${p.name}` : `Edit ${p.name}`}
+                  >
+                    {expanded ? "▾" : "▸"}
+                  </button>
 
-            <div className="admin-table">
-              {products.map((p) => (
-                <div className="admin-row" key={p.id}>
                   <div className="admin-thumb admin-thumb-static">
                     <img
                       src={p.variants[0]?.images[0] || "/images/fallback.svg"}
@@ -405,296 +451,323 @@ export default function AdminPage() {
                     />
                   </div>
 
-                  <div className="admin-fields">
-                    <input
-                      className="admin-input"
-                      value={p.name}
-                      onChange={(e) => updateProduct(p.id, { name: e.target.value })}
-                      placeholder="Product name"
-                    />
-                    <div className="admin-slug-row">
-                      <span className="admin-slug-prefix">/product/</span>
-                      <input
-                        className="admin-input"
-                        key={`${p.id}-slug-${p.slug}`}
-                        defaultValue={p.slug}
-                        onBlur={(e) => {
-                          const next = slugify(e.target.value);
-                          if (next) updateProduct(p.id, { slug: next });
-                        }}
-                        placeholder="url-slug"
-                        aria-label="URL slug"
-                      />
-                      <button
-                        type="button"
-                        className="admin-slug-regen"
-                        title="Set the URL from the product name"
-                        onClick={() => {
-                          const next = slugify(p.name);
-                          if (next) updateProduct(p.id, { slug: next });
-                        }}
-                      >
-                        ↻ from name
-                      </button>
-                    </div>
-                    <div className="admin-fields-row">
-                      <select
-                        className="admin-input"
-                        value={p.category}
-                        onChange={(e) =>
-                          updateProduct(p.id, { category: e.target.value as Product["category"] })
-                        }
-                      >
-                        {CATEGORIES.map((c) => (
-                          <option key={c} value={c}>
-                            {categoryLabels[c]}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        className="admin-input"
-                        value={p.type ?? ""}
-                        onChange={(e) =>
-                          updateProduct(p.id, {
-                            type: (e.target.value || null) as Product["type"],
-                          })
-                        }
-                      >
-                        <option value="">Type &mdash; not set</option>
-                        {PRODUCT_TYPES.map((t) => (
-                          <option key={t} value={t}>
-                            {productTypeLabels[t]}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        className="admin-input"
-                        type="number"
-                        step="0.01"
-                        value={(p.price / 100).toFixed(2)}
-                        onChange={(e) =>
-                          updateProduct(p.id, {
-                            price: Math.round(parseFloat(e.target.value || "0") * 100),
-                          })
-                        }
-                        placeholder="Price"
-                      />
-                      <input
-                        className="admin-input"
-                        value={p.badges.join(", ")}
-                        onChange={(e) =>
-                          updateProduct(p.id, {
-                            badges: e.target.value
-                              .split(",")
-                              .map((s) => s.trim().toUpperCase())
-                              .filter(Boolean),
-                          })
-                        }
-                        placeholder="Badges (comma separated)"
-                      />
-                      <input
-                        className="admin-input"
-                        key={`${p.id}-sizes-${p.variants[0]?.skus.length}`}
-                        defaultValue={currentSizes(p).join(", ")}
-                        onBlur={(e) => updateProductSizes(p.id, e.target.value)}
-                        placeholder="Sizes, e.g. XS, S, M, L or 2-3Y, 4-5Y, 6-7Y"
-                      />
-                    </div>
-                    <textarea
-                      className="admin-input"
-                      rows={2}
-                      value={p.description}
-                      onChange={(e) => updateProduct(p.id, { description: e.target.value })}
-                      placeholder="Description"
-                    />
-                    <p className="admin-price-preview">
-                      List price {formatPrice(p.price)}
+                  <div className="admin-card-summary">
+                    <h2>{p.name}</h2>
+                    <p>
+                      /product/{p.slug} · {p.type ? productTypeLabels[p.type] : "no type"} ·{" "}
+                      {formatPrice(p.price)} · {p.variants.length} colours
                     </p>
-
-                    <div className="admin-variants">
-                      <p className="admin-variants-label">
-                        Colours — leave a price blank to use the list price
-                      </p>
+                    <div className="admin-chip-row">
                       {p.variants.map((v) => (
-                        <div className="admin-variant" key={v.id} id={`variant-${v.id}`}>
-                          <div className="admin-variant-row">
-                            <select
-                              className="admin-input"
-                              value={v.colour}
-                              onChange={(e) => {
-                                const swatch = swatchPalette.find((s) => s.name === e.target.value);
-                                if (swatch) {
-                                  updateVariant(p.id, v.id, { colour: swatch.name, swatch: swatch.hex });
-                                }
-                              }}
-                              aria-label="Colour"
-                            >
-                              {swatchPalette.map((s) => (
-                                <option key={s.name} value={s.name}>
-                                  {s.name}
-                                </option>
-                              ))}
-                            </select>
-                            <span
-                              className="admin-swatch-preview"
-                              style={{ background: v.swatch }}
-                              aria-hidden="true"
-                            />
-                            <input
-                              className="admin-input"
-                              type="number"
-                              step="0.01"
-                              value={v.price == null ? "" : (v.price / 100).toFixed(2)}
-                              onChange={(e) => {
-                                const raw = e.target.value;
-                                updateVariant(p.id, v.id, {
-                                  // Empty means "inherit", which is null — not 0.
-                                  price: raw === "" ? null : Math.round(parseFloat(raw) * 100),
-                                });
-                              }}
-                              placeholder="Override"
-                            />
-                            <button
-                              className="admin-delete"
-                              onClick={() => deleteVariant(p.id, v.id)}
-                            >
-                              Remove
-                            </button>
-                          </div>
-
-                          <div className="admin-image-strip">
-                            {v.images.map((img, i) => (
-                              <div className="admin-image-thumb" key={img + i}>
-                                <img
-                                  src={img}
-                                  alt=""
-                                  onError={(e) => {
-                                    e.currentTarget.src = "/images/fallback.svg";
-                                  }}
-                                />
-                                <button
-                                  type="button"
-                                  className="admin-image-remove"
-                                  aria-label={`Remove photo ${i + 1} of ${v.colour}`}
-                                  onClick={() => removeVariantImage(p.id, v.id, i)}
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            ))}
-                            <label className="admin-image-add">
-                              +
-                              <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                hidden
-                                onChange={(e) => {
-                                  const files = Array.from(e.target.files ?? []);
-                                  files.forEach((file) => handleVariantImageAdd(p.id, v.id, file));
-                                  e.target.value = "";
-                                }}
-                              />
-                            </label>
-                            {v.images.length === 0 && (
-                              <span className="admin-no-photo">No photo yet — saving is blocked until this colour has one</span>
-                            )}
-                          </div>
-                        </div>
+                        <span
+                          key={v.id}
+                          className="admin-chip"
+                          title={v.colour}
+                          style={{ background: v.swatch }}
+                        />
                       ))}
-                      <button className="admin-btn" onClick={() => addVariant(p.id)}>
-                        + Add colour
-                      </button>
                     </div>
                   </div>
 
-                  <button className="admin-delete" onClick={() => deleteProduct(p.id)}>
-                    Delete
-                  </button>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-
-        {tab === "hero" && (
-          <>
-            <div className="admin-actions">
-              <button className="admin-btn" onClick={addSlide}>
-                + Add slide
-              </button>
-              <button className="admin-btn admin-btn-primary" onClick={saveHero} disabled={saving}>
-                {saving ? "Saving…" : "Save changes"}
-              </button>
-            </div>
-
-            <div className="admin-table">
-              {slides.map((s, i) => (
-                <div className="admin-row" key={s.id}>
-                  <label className="admin-thumb admin-thumb-wide">
-                    <img src={s.image} alt="" />
-                    <span>Change</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      hidden
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleSlideImage(s.id, file);
-                      }}
-                    />
-                  </label>
-
-                  <div className="admin-fields">
-                    <input
-                      className="admin-input"
-                      value={s.eyebrow || ""}
-                      onChange={(e) => updateSlide(s.id, { eyebrow: e.target.value })}
-                      placeholder="Eyebrow (small label above heading)"
-                    />
-                    <input
-                      className="admin-input"
-                      value={s.heading || ""}
-                      onChange={(e) => updateSlide(s.id, { heading: e.target.value })}
-                      placeholder="Heading"
-                    />
-                    <input
-                      className="admin-input"
-                      value={s.subheading || ""}
-                      onChange={(e) => updateSlide(s.id, { subheading: e.target.value })}
-                      placeholder="Subheading"
-                    />
-                    <select
-                      className="admin-input"
-                      value={s.focus || "top"}
-                      onChange={(e) => updateSlide(s.id, { focus: e.target.value as HeroSlide["focus"] })}
-                    >
-                      <option value="top">Image focus: Top (faces, portrait photos)</option>
-                      <option value="center">Image focus: Center</option>
-                      <option value="bottom">Image focus: Bottom</option>
-                    </select>
-                  </div>
-
-                  <div className="admin-slide-actions">
-                    <button className="admin-move" onClick={() => moveSlide(s.id, -1)} disabled={i === 0}>
-                      ↑
+                  <div className="admin-card-head-actions">
+                    <button className="admin-btn admin-btn-quiet" onClick={() => toggleOpen(p.id)}>
+                      {expanded ? "Done" : "Edit"}
                     </button>
-                    <button
-                      className="admin-move"
-                      onClick={() => moveSlide(s.id, 1)}
-                      disabled={i === slides.length - 1}
-                    >
-                      ↓
-                    </button>
-                    <button className="admin-delete" onClick={() => deleteSlide(s.id)}>
+                    <button className="admin-delete" onClick={() => deleteProduct(p.id)}>
                       Delete
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </>
-        )}
+
+                {expanded && (
+                  <div className="admin-card-body">
+                    <section className="admin-section">
+                      <h3 className="admin-section-title">Details</h3>
+                      <input
+                        className="admin-input"
+                        value={p.name}
+                        onChange={(e) => updateProduct(p.id, { name: e.target.value })}
+                        placeholder="Product name"
+                      />
+                      <div className="admin-slug-row">
+                        <span className="admin-slug-prefix">/product/</span>
+                        <input
+                          className="admin-input"
+                          key={`${p.id}-slug-${p.slug}`}
+                          defaultValue={p.slug}
+                          onBlur={(e) => {
+                            const next = slugify(e.target.value);
+                            if (next) updateProduct(p.id, { slug: next });
+                          }}
+                          placeholder="url-slug"
+                          aria-label="URL slug"
+                        />
+                        <button
+                          type="button"
+                          className="admin-slug-regen"
+                          title="Set the URL from the product name"
+                          onClick={() => {
+                            const next = slugify(p.name);
+                            if (next) updateProduct(p.id, { slug: next });
+                          }}
+                        >
+                          ↻ from name
+                        </button>
+                      </div>
+
+                      <div className="admin-field-grid">
+                        <label className="admin-field">
+                          <span>Category</span>
+                          <select
+                            className="admin-input"
+                            value={p.category}
+                            onChange={(e) =>
+                              updateProduct(p.id, {
+                                category: e.target.value as Product["category"],
+                              })
+                            }
+                          >
+                            {CATEGORIES.map((c) => (
+                              <option key={c} value={c}>
+                                {categoryLabels[c]}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="admin-field">
+                          <span>Type</span>
+                          <select
+                            className="admin-input"
+                            value={p.type ?? ""}
+                            onChange={(e) =>
+                              updateProduct(p.id, {
+                                type: (e.target.value || null) as Product["type"],
+                              })
+                            }
+                          >
+                            <option value="">Not set</option>
+                            {PRODUCT_TYPES.map((t) => (
+                              <option key={t} value={t}>
+                                {productTypeLabels[t]}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="admin-field">
+                          <span>List price (£)</span>
+                          <input
+                            className="admin-input"
+                            type="number"
+                            step="0.01"
+                            value={(p.price / 100).toFixed(2)}
+                            onChange={(e) =>
+                              updateProduct(p.id, {
+                                price: Math.round(parseFloat(e.target.value || "0") * 100),
+                              })
+                            }
+                          />
+                        </label>
+                        <label className="admin-field">
+                          <span>Badges</span>
+                          <input
+                            className="admin-input"
+                            value={p.badges.join(", ")}
+                            onChange={(e) =>
+                              updateProduct(p.id, {
+                                badges: e.target.value
+                                  .split(",")
+                                  .map((s) => s.trim().toUpperCase())
+                                  .filter(Boolean),
+                              })
+                            }
+                            placeholder="NEW ARRIVAL, BESTSELLER"
+                          />
+                        </label>
+                        <label className="admin-field admin-field-wide">
+                          <span>Sizes — applies to every colour</span>
+                          <input
+                            className="admin-input"
+                            key={`${p.id}-sizes-${p.variants[0]?.skus.length}`}
+                            defaultValue={currentSizes(p).join(", ")}
+                            onBlur={(e) => updateProductSizes(p.id, e.target.value)}
+                            placeholder="XS, S, M, L, XL, XXL"
+                          />
+                        </label>
+                      </div>
+
+                      <label className="admin-field">
+                        <span>Description</span>
+                        <textarea
+                          className="admin-input"
+                          rows={3}
+                          value={p.description}
+                          onChange={(e) => updateProduct(p.id, { description: e.target.value })}
+                        />
+                      </label>
+                    </section>
+
+                    <section className="admin-section">
+                      <h3 className="admin-section-title">
+                        Colours
+                        <span className="admin-section-hint">
+                          Leave a price blank to use the list price. Tick a photo to make it the
+                          product&rsquo;s card image.
+                        </span>
+                      </h3>
+
+                      {p.variants.map((v) => {
+                        const known = colourOptions.some((c) => c.name === v.colour);
+                        return (
+                          <div className="admin-variant" key={v.id} id={`variant-${v.id}`}>
+                            <div className="admin-variant-row">
+                              <span
+                                className="admin-swatch-preview"
+                                style={{ background: v.swatch }}
+                                aria-hidden="true"
+                              />
+                              <select
+                                className="admin-input"
+                                value={v.colour}
+                                onChange={(e) => {
+                                  const picked = colourOptions.find(
+                                    (c) => c.name === e.target.value
+                                  );
+                                  if (!picked) return;
+                                  updateVariant(p.id, v.id, {
+                                    colour: picked.name,
+                                    // A reserved colour has no standard yet, so
+                                    // there is nothing to copy -- keep the swatch
+                                    // the photography gave this garment rather
+                                    // than blanking it.
+                                    ...(picked.hex ? { swatch: picked.hex } : {}),
+                                  });
+                                }}
+                                aria-label="Colour"
+                              >
+                                {/* A colour not in the issued list would otherwise
+                                    render as the first option and quietly lie about
+                                    what this variant holds. */}
+                                {!known && <option value={v.colour}>{v.colour} — not issued</option>}
+                                {colourOptions.map((c) => (
+                                  <option key={c.number} value={c.name}>
+                                    {c.number} · {c.name}
+                                    {c.hex ? "" : " (reserved)"}
+                                  </option>
+                                ))}
+                              </select>
+                              <input
+                                className="admin-input admin-input-price"
+                                type="number"
+                                step="0.01"
+                                value={v.price == null ? "" : (v.price / 100).toFixed(2)}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  updateVariant(p.id, v.id, {
+                                    // Empty means "inherit", which is null — not 0.
+                                    price: raw === "" ? null : Math.round(parseFloat(raw) * 100),
+                                  });
+                                }}
+                                placeholder="Override £"
+                              />
+                              <button
+                                className="admin-delete"
+                                onClick={() => deleteVariant(p.id, v.id)}
+                              >
+                                Remove
+                              </button>
+                            </div>
+
+                            <div className="admin-image-strip">
+                              {v.images.map((img, i) => {
+                                const lead = isThumbnail(p, v, i);
+                                return (
+                                  <div
+                                    className={`admin-image-thumb ${lead ? "is-thumb" : ""}`}
+                                    key={img + i}
+                                  >
+                                    <img
+                                      src={img}
+                                      alt=""
+                                      onError={(e) => {
+                                        e.currentTarget.src = "/images/fallback.svg";
+                                      }}
+                                    />
+                                    <button
+                                      type="button"
+                                      className="admin-image-pick"
+                                      aria-pressed={lead}
+                                      title={
+                                        lead
+                                          ? "This is the product's card image"
+                                          : "Make this the product's card image"
+                                      }
+                                      onClick={() => makeThumbnail(p.id, v.id, i)}
+                                    >
+                                      ✓
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="admin-image-remove"
+                                      aria-label={`Remove photo ${i + 1} of ${v.colour}`}
+                                      onClick={() => removeVariantImage(p.id, v.id, i)}
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                              <label className="admin-image-add">
+                                +
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  multiple
+                                  hidden
+                                  onChange={(e) => {
+                                    const files = Array.from(e.target.files ?? []);
+                                    files.forEach((file) =>
+                                      handleVariantImageAdd(p.id, v.id, file)
+                                    );
+                                    e.target.value = "";
+                                  }}
+                                />
+                              </label>
+                              {v.images.length === 0 && (
+                                <span className="admin-no-photo">
+                                  No photo yet — saving is blocked until this colour has one
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      <button className="admin-btn" onClick={() => addVariant(p.id)}>
+                        + Add colour
+                      </button>
+                    </section>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="admin-toasts" role="status" aria-live="polite">
+        {toasts.map((t) => (
+          <div key={t.id} className={`admin-toast is-${t.kind}`}>
+            <span>{t.text}</span>
+            <button
+              type="button"
+              className="admin-toast-close"
+              aria-label="Dismiss"
+              onClick={() => dismissToast(t.id)}
+            >
+              ×
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );

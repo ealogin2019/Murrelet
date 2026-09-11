@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
     <div className="wrap" style={{ maxWidth: 360, paddingTop: 100, paddingBottom: 100 }}>
       <h1 style={{ fontFamily: "var(--serif)", fontWeight: 500, marginBottom: 8 }}>Admin</h1>
       <p style={{ color: "var(--muted)", marginBottom: 28, fontSize: "0.9rem" }}>
-        Sign in to edit products, photos and the homepage carousel.
+        Sign in to edit products, colours, prices and photography.
       </p>
       <form onSubmit={handleSubmit}>
         <input

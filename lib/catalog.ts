@@ -250,6 +250,24 @@ const COLOUR_NUMBER: Record<string, string> = Object.fromEntries(
   COLOUR_STANDARDS.map((c) => [c.name, c.number])
 );
 
+/**
+ * The colours /admin may choose from — the ISSUED ones, with their numbers.
+ *
+ * The admin colour picker used to be driven by `swatchPalette` below, a ten
+ * entry decorative list with no overlap with this table. Every variant whose
+ * colour was not in it -- Brown, Burgundy, Charcoal, Sand, Sky Blue, Grey,
+ * Navy, Chestnut, Graphite, which is most of the catalogue -- rendered with no
+ * matching <option> and so DISPLAYED AS WHITE while holding its real value.
+ * Touching that control then wrote a palette name over a real colourway, which
+ * skuNumber() has no number for, and a palette hex over a swatch measured off
+ * the photography.
+ *
+ * Sorted by number, because the number is the thing operations holds and the
+ * name is only what the customer reads.
+ */
+export const colourOptions: { name: string; number: string; hex: string | null }[] =
+  COLOUR_STANDARDS.map((c) => ({ name: c.name, number: c.number, hex: c.standard }));
+
 /** CIE76 colour difference. Crude next to CIE2000 and entirely sufficient
  *  here: the question is "same cloth or not", where the measured gap is either
  *  under 5 or over 8, never in between. */
