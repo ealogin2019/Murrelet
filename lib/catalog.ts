@@ -526,10 +526,82 @@ const smallLogoTee: Product = {
   }),
 };
 
+/** Colourways of the Large.Text hoodie — the first garment sold under 91.
+ *
+ *  Measured the same way as the tees, and TWO of the six folders disagree with
+ *  the standard their name implies. The standard wins, because a number
+ *  belongs to a cloth and not to a word:
+ *
+ *    "grey"        is Graphite to dE 3.0. Against the cloth actually sold as
+ *                  Grey (#A4A4A6) it is nowhere near — this hoodie is a dark
+ *                  charcoal, that tee is a mid grey. Selling both as 05 would
+ *                  sum two fabrics in one stock line.
+ *    "light blue"  is Sky Blue to dE 7.3, and takes 08 rather than a new
+ *                  number. 7.3 sits inside the band this project has already
+ *                  measured for ONE cloth photographed under two lighting
+ *                  setups (up to 18.7), so the evidence does not support a
+ *                  second cloth. The asymmetry decides it: one number holding
+ *                  two cloths is the advisory error, two numbers holding one
+ *                  cloth is the blocking one, and only the second is permanent
+ *                  — a new number can still be issued if the supplier confirms
+ *                  the fabrics differ.
+ *
+ *  The other four land on their obvious numbers: Black 3.5, Light Grey 2.8,
+ *  Navy 1.4, White 1.0. */
+const LARGE_TEXT_HOODIE_COLOURS: {
+  colour: string;
+  swatch: string;
+  shots: number;
+  folder?: string;
+}[] = [
+  { colour: "Black", swatch: "#1C1C1C", shots: 5 },
+  { colour: "Graphite", swatch: "#444245", shots: 5, folder: "grey" },
+  { colour: "Light Grey", swatch: "#C5C6CA", shots: 5, folder: "light-grey" },
+  { colour: "Navy", swatch: "#1A233C", shots: 5, folder: "navy-blue" },
+  { colour: "Sky Blue", swatch: "#B6D8FC", shots: 5, folder: "light-blue" },
+  { colour: "White", swatch: "#F0F0F4", shots: 5 },
+];
+
+const largeTextHoodie: Product = {
+  id: "large-text-hoodie",
+  slug: "large-text-hoodie",
+  name: "Large Text Hoodie",
+  category: "men",
+  type: "hoodies",
+  // PROVISIONAL COPY — written to get the product on the page. Every string
+  // in this product is placeholder and is for the designers to replace with
+  // the real description, details and price.
+  description:
+    "The wordmark, set large across the chest. Brushed-back cotton-rich fleece "
+    + "with a double-layer hood, kangaroo pocket and ribbed cuffs and hem. "
+    + "Woven label inside the hood. Six colourways.",
+  details: [
+    "PROVISIONAL — copy and price to be replaced by the design team",
+    "80% ringspun cotton, 20% polyester brushed-back fleece",
+    "Regular fit",
+    "Double-layer hood, kangaroo pocket, ribbed cuffs and hem",
+    "Machine wash cold, dry flat",
+  ],
+  badges: ["NEW ARRIVAL"],
+  price: 3500,
+  variants: LARGE_TEXT_HOODIE_COLOURS.map(({ colour, swatch, shots: n, folder }) => {
+    const dir = folder ?? colour.toLowerCase().replace(/\s+/g, "-");
+    return {
+      id: `large-text-hoodie-${dir}`,
+      colour,
+      swatch,
+      price: null,
+      images: shots("large-text-hoodie", dir, n),
+      skus: skuRun("hoodies", "large-text", colour),
+    };
+  }),
+};
+
 export const seedCatalog: Product[] = [
   largeTextTee,
   smallTextLogoTee,
   smallLogoTee,
+  largeTextHoodie,
   {
     id: "linen-shirt",
     slug: "custom-fit-linen-shirt",
