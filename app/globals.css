@@ -833,9 +833,25 @@ img {
 }
 
 .admin-card-summary p {
-  margin: 2px 0 0;
+  margin: 3px 0 0;
   font-size: 0.72rem;
   color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+}
+
+.admin-card-summary code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.68rem;
+  color: var(--ink);
+  background: var(--card-bg);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+.admin-dirty.is-stale {
+  color: #a5312a;
 }
 
 .admin-chip-row {
@@ -1379,11 +1395,21 @@ img {
 }
 
 .admin-variant-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 110px auto;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 560px) {
+  .admin-variant-row {
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+  .admin-variant-row .admin-input-price,
+  .admin-variant-row .admin-delete {
+    grid-column: 2;
+  }
 }
 
 /* Live preview next to the colour select — a name alone ("Royal Blue" vs
@@ -1426,33 +1452,46 @@ img {
 
 .admin-image-pick {
   position: absolute;
-  left: -6px;
-  top: -6px;
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  background: var(--bg);
-  color: var(--muted);
-  border: 1.5px solid var(--line);
-  font-size: 0.7rem;
+  left: 4px;
+  bottom: 4px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0;
+  opacity: 0;
+  transition: opacity 0.12s ease;
 }
 
-.admin-image-pick:hover {
-  border-color: var(--ink);
-  color: var(--ink);
+.admin-image-thumb:hover .admin-image-pick,
+.admin-image-pick:focus-visible {
+  opacity: 1;
 }
 
 .admin-image-thumb.is-thumb .admin-image-pick {
+  opacity: 1;
   background: var(--ink);
   border-color: var(--ink);
   color: #fff;
   cursor: default;
+}
+
+.admin-image-remove {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.admin-image-thumb:hover .admin-image-remove,
+.admin-image-remove:focus-visible {
+  opacity: 1;
 }
 
 .admin-image-remove {

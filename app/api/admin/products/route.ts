@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCatalog, saveCatalog } from "@/lib/catalog-store";
+import { getCatalog, saveCatalog, catalogVersion } from "@/lib/catalog-store";
 import { Product, productTypes } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
@@ -8,15 +8,22 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const products = await getCatalog();
-  return NextResponse.json({ products });
+  return NextResponse.json({ products, version: catalogVersion(products) });
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const products = body?.products as Product[] | undefined;
+  const baseVersion = body?.baseVersion as string | undefined;
 
   if (!Array.isArray(products)) {
     return NextResponse.json({ error: "Expected { products: Product[] }." }, { status: 400 });
+  }
+  if (typeof baseVersion !== "string") {
+    return NextResponse.json(
+      { error: "Expected baseVersion -- the catalogue version this page loaded." },
+      { status: 400 }
+    );
   }
 
   // Structural validation. The admin UI cannot yet author variants, so this
@@ -69,10 +76,29 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // This is a whole-catalogue write. Refuse it if the catalogue is not the
+  // one the page loaded -- see catalogVersion for the deletion this stops.
+  const current = catalogVersion(await getCatalog());
+  if (current !== baseVersion) {
+    return NextResponse.json(
+      {
+        error:
+          "The catalogue has changed since this page loaded -- saving now would "
+          + "overwrite those changes. Reload the catalogue, then make your edits again.",
+        version: current,
+      },
+      { status: 409 }
+    );
+  }
+
   try {
     await saveCatalog(products);
-    return NextResponse.json({ ok: true });
+    const after = await getCatalog();
+    return NextResponse.json({ ok: true, version: catalogVersion(after) });
   } catch (err: any) {
+    // A 500 with no server-side trace is undiagnosable afterwards; one such
+    // save failed on 2026-09-12 and left nothing to read.
+    console.error("[admin/products] save failed:", err);
     return NextResponse.json({ error: err.message || "Failed to save products." }, { status: 500 });
   }
 }

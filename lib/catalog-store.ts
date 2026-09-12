@@ -7,6 +7,7 @@
 // The DB is snake_case and the app is camelCase — that translation lives here
 // and nowhere else.
 
+import { createHash } from "crypto";
 import { Product, Variant, Sku, Category, ProductType, seedCatalog } from "./catalog";
 import { supabaseAdmin, supabasePublic, supabaseConfigured } from "./supabase";
 
@@ -104,6 +105,26 @@ export async function getCatalog(): Promise<Product[]> {
     }
     throw error;
   }
+}
+
+/**
+ * A fingerprint of the catalogue as it stands, for the admin's save.
+ *
+ * saveCatalog is a WHOLE-catalogue write: what the client sends replaces what
+ * is there, and anything absent is deleted. That is right for a client that
+ * holds the current catalogue and wrong for one that does not -- an /admin
+ * page loaded before a product was grafted in from the command line, then
+ * saved, deleted that product without anyone asking it to. It happened on
+ * 2026-09-12, twice within the hour, and only a failed request saved the
+ * second one.
+ *
+ * So the page is told the version it loaded, sends it back, and the server
+ * refuses the save if the catalogue has moved on. Hash of the full shape, not
+ * a counter: any edit anywhere -- an image reordered from another tab, a
+ * price changed in a script -- is a reason to reload before overwriting it.
+ */
+export function catalogVersion(products: Product[]): string {
+  return createHash("sha256").update(JSON.stringify(products)).digest("hex").slice(0, 16);
 }
 
 export async function saveCatalog(products: Product[]): Promise<void> {

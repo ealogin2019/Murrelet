@@ -44,6 +44,13 @@ export default function AdminPage() {
   /** Edits made since the last successful save. Drives the save button's
    *  state and the leave-the-page warning. */
   const [dirty, setDirty] = useState(false);
+  /** The catalogue version this page loaded. Sent back with every save so the
+   *  server can refuse to overwrite a catalogue that has moved on -- see
+   *  catalogVersion in lib/catalog-store. */
+  const [version, setVersion] = useState<string | null>(null);
+  /** Set when a save was refused for that reason. The only way out is a
+   *  reload; edits made against a stale catalogue cannot be merged here. */
+  const [stale, setStale] = useState(false);
 
   const toastSeq = useRef(0);
 
@@ -61,13 +68,28 @@ export default function AdminPage() {
   const dismissToast = (id: number) =>
     setToasts((prev) => prev.filter((t) => t.id !== id));
 
-  useEffect(() => {
-    fetch("/api/admin/products")
+  const load = useCallback(() => {
+    setLoading(true);
+    return fetch("/api/admin/products")
       .then((r) => r.json())
-      .then((p) => setProducts(p.products || []))
+      .then((p) => {
+        setProducts(p.products || []);
+        setVersion(p.version ?? null);
+        setDirty(false);
+        setStale(false);
+      })
       .catch(() => toast("error", "Could not load the catalogue."))
       .finally(() => setLoading(false));
   }, [toast]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  function reload() {
+    if (dirty && !confirm("Reload the catalogue? Your unsaved edits will be lost.")) return;
+    load();
+  }
 
   // Closing the tab mid-edit loses everything -- nothing here autosaves.
   useEffect(() => {
@@ -351,10 +373,15 @@ export default function AdminPage() {
       const res = await fetch("/api/admin/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ products }),
+        body: JSON.stringify({ products, baseVersion: version }),
       });
       const data = await res.json();
+      if (res.status === 409) {
+        setStale(true);
+        throw new Error(data.error);
+      }
       if (!res.ok) throw new Error(data.error || "Save failed.");
+      setVersion(data.version ?? version);
       setDirty(false);
       toast("ok", "Saved. Changes are live now.");
     } catch (err: any) {
@@ -410,16 +437,27 @@ export default function AdminPage() {
             </button>
           </div>
           <div className="admin-actionbar-right">
-            <span className={`admin-dirty ${dirty ? "is-on" : ""}`}>
-              {dirty ? "Unsaved changes" : "All changes saved"}
-            </span>
-            <button
-              className="admin-btn admin-btn-primary"
-              onClick={saveProducts}
-              disabled={saving || !dirty}
-            >
-              {saving ? "Saving…" : "Save changes"}
-            </button>
+            {stale ? (
+              <>
+                <span className="admin-dirty is-stale">Catalogue changed elsewhere</span>
+                <button className="admin-btn admin-btn-primary" onClick={reload}>
+                  Reload catalogue
+                </button>
+              </>
+            ) : (
+              <>
+                <span className={`admin-dirty ${dirty ? "is-on" : ""}`}>
+                  {dirty ? "Unsaved changes" : "All changes saved"}
+                </span>
+                <button
+                  className="admin-btn admin-btn-primary"
+                  onClick={saveProducts}
+                  disabled={saving || !dirty}
+                >
+                  {saving ? "Saving…" : "Save changes"}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -454,8 +492,10 @@ export default function AdminPage() {
                   <div className="admin-card-summary">
                     <h2>{p.name}</h2>
                     <p>
-                      /product/{p.slug} · {p.type ? productTypeLabels[p.type] : "no type"} ·{" "}
-                      {formatPrice(p.price)} · {p.variants.length} colours
+                      <code>/product/{p.slug}</code>
+                      <span>{p.type ? productTypeLabels[p.type] : "No type"}</span>
+                      <span>{formatPrice(p.price)}</span>
+                      <span>{p.variants.length} colours</span>
                     </p>
                     <div className="admin-chip-row">
                       {p.variants.map((v) => (
@@ -703,7 +743,7 @@ export default function AdminPage() {
                                       }
                                       onClick={() => makeThumbnail(p.id, v.id, i)}
                                     >
-                                      ✓
+                                      {lead ? "Card" : "Use as card"}
                                     </button>
                                     <button
                                       type="button"
