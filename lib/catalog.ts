@@ -615,11 +615,103 @@ const largeTextHoodie: Product = {
   }),
 };
 
+/** Colourways of the two Small hoodie treatments. One list, because they are
+ *  photographed on the same six garments -- the flat lays are the same files
+ *  -- and a swatch measured twice off one photograph is one swatch.
+ *
+ *  Three shots per colour, not five: the designers dotted the flat lay and one
+ *  model shot per colour, the hood interior needs no dot, and the two
+ *  remaining model shots have no crest to place. They are held back in the
+ *  source tree under a leading underscore rather than shipped blank.
+ *
+ *  Numbers follow the Large.Text hoodie above, because it is the same cloth:
+ *  the grey measures 4.6 from Graphite and 4.8 from Charcoal -- a near tie --
+ *  and what breaks it is that this garment already sells as 18. The light blue
+ *  measures 1.1 from Sky Blue, which settles yesterday's 7.3 the right way.
+ *
+ *  Small.TextLogo/grey's flat lay was found to be the BLACK flat lay, byte for
+ *  byte, saved under a new name; its swatch read #1E1E1E, identical to black,
+ *  which is how it was caught. The real grey flat from Small.Logo is used in
+ *  its place. */
+const SMALL_HOODIE_COLOURS: {
+  colour: string;
+  swatch: string;
+  shots: number;
+  folder?: string;
+}[] = [
+  { colour: "Black", swatch: "#1D1D1D", shots: 3 },
+  { colour: "Graphite", swatch: "#413F44", shots: 3, folder: "grey" },
+  { colour: "Light Grey", swatch: "#C5C6CA", shots: 3, folder: "light-grey" },
+  { colour: "Navy", swatch: "#1B2138", shots: 3, folder: "navy-blue" },
+  { colour: "Sky Blue", swatch: "#C1D6EE", shots: 3, folder: "light-blue" },
+  { colour: "White", swatch: "#F5F5F7", shots: 3 },
+];
+
+const HOODIE_DETAILS = [
+  "PROVISIONAL — copy and price to be replaced by the design team",
+  "80% ringspun cotton, 20% polyester brushed-back fleece",
+  "Regular fit",
+  "Double-layer hood, kangaroo pocket, ribbed cuffs and hem",
+  "Machine wash cold, dry flat",
+];
+
+function smallHoodie(
+  slug: "small-logo-hoodie" | "small-text-logo-hoodie",
+  name: string,
+  treatment: "small-logo" | "small-text-logo",
+  lead: string
+): Product {
+  return {
+    id: slug,
+    slug,
+    name,
+    category: "men",
+    type: "hoodies",
+    // PROVISIONAL COPY — see the tees; every string here is for the design
+    // team to replace.
+    description:
+      lead
+      + " Brushed-back cotton-rich fleece with a double-layer hood, kangaroo "
+      + "pocket and ribbed cuffs and hem. Woven label inside the hood. Six "
+      + "colourways.",
+    details: HOODIE_DETAILS,
+    badges: ["NEW ARRIVAL"],
+    price: 3500,
+    variants: SMALL_HOODIE_COLOURS.map(({ colour, swatch, shots: n, folder }) => {
+      const dir = folder ?? colour.toLowerCase().replace(/\s+/g, "-");
+      return {
+        id: `${slug}-${dir}`,
+        colour,
+        swatch,
+        price: null,
+        images: shots(slug, dir, n),
+        skus: skuRun("hoodies", treatment, colour),
+      };
+    }),
+  };
+}
+
+const smallLogoHoodie = smallHoodie(
+  "small-logo-hoodie",
+  "Small Logo Hoodie",
+  "small-logo",
+  "The crest alone, set small at the left chest."
+);
+
+const smallTextLogoHoodie = smallHoodie(
+  "small-text-logo-hoodie",
+  "Small Text Logo Hoodie",
+  "small-text-logo",
+  "The crest and wordmark, set small at the left chest."
+);
+
 export const seedCatalog: Product[] = [
   largeTextTee,
   smallTextLogoTee,
   smallLogoTee,
   largeTextHoodie,
+  smallLogoHoodie,
+  smallTextLogoHoodie,
   {
     id: "linen-shirt",
     slug: "custom-fit-linen-shirt",
