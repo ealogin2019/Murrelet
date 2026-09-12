@@ -7,9 +7,9 @@ import CookieBanner from "@/components/CookieBanner";
 import RevealObserver from "@/components/RevealObserver";
 import { SITE_URL } from "@/lib/site";
 
-const title = "Murrelet — Shirts, Polos & Shorts";
+const title = "Murrelet — Logo Tees & Hoodies";
 const description =
-  "Considered warm-weather essentials: linen shirts, polo shirts and cotton shorts. Free standard delivery over £100.";
+  "Ringspun cotton tees and brushed-back fleece hoodies carrying the Murrelet crest. UK delivery, returns within 14 days.";
 // Real product photography, not a placeholder — used whenever a page doesn't
 // set its own OG image (most pages besides individual products).
 const shareImage = "/images/hero-murrelet.jpg";

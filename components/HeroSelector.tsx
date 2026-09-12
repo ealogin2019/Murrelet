@@ -211,10 +211,10 @@ export default function HeroSelector({
 
         <div className="hero-select-text">
           <div className="hero-select-copy">
-            <p className="hero-select-kicker">The new warm-weather edit</p>
+            <p className="hero-select-kicker">Tees and hoodies. One mark.</p>
             <h1>Made for <em>long</em> days.</h1>
             <p className="hero-select-intro">
-              Considered essentials in breathable fabrics, easy colours and fits that move with you.
+              Ringspun cotton tees and brushed-back fleece hoodies, carrying the Murrelet crest. Cut to be worn every day.
             </p>
             <Link href="/shop" className="hero-select-cta">
               Shop the collection

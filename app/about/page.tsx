@@ -3,42 +3,47 @@ import InfoPage from "@/components/InfoPage";
 
 export const metadata: Metadata = {
   title: "About",
-  description: "Considered warm-weather clothing, made to be worn.",
+  description: "Murrelet makes logo tees and hoodies: one crest, a short list of colours, garments chosen to be worn.",
 };
 
+// Written from what is true of the range as it stands: two garments, three
+// prints, and the crest. No origin story is claimed here because none has
+// been given; the owner can add one above "What we make" when there is one.
 export default function AboutPage() {
   return (
     <InfoPage eyebrow="About" title="Murrelet">
-      <p className="placeholder-flag">
-        This is a starting template, not the real story yet &mdash; replace it with
-        your own when you&rsquo;re ready.
-      </p>
-
       <img
         className="about-photo"
-        src="/images/catalog/custom-fit-linen-shirt/light-blue/1.jpg"
-        alt=""
+        src="/images/catalog/small-logo-hoodie/light-grey/2.webp"
+        alt="The Murrelet crest on a light grey hoodie"
       />
 
       <p>
-        Murrelet makes clothes for the parts of the day that matter &mdash; the ones
-        spent outside, unhurried, in good company. Linen that softens instead of
-        creasing. Cotton cut to move with you, not against you. Colour chosen for how
-        it looks in real light, not on a screen.
+        Murrelet is a mark and the clothes that carry it. A crest, drawn once and
+        printed small at the chest or set large as a wordmark, on garments chosen
+        because they are worn rather than kept.
       </p>
 
       <h2>What we make</h2>
       <p>
-        A small, considered range: shirts, polo shirts and shorts, built from natural
-        fibres and cut to be worn, not just owned. We&rsquo;d rather make four things
-        well than forty things adequately.
+        Two things, done in three ways. A lightweight ringspun cotton tee and a
+        280&nbsp;gsm brushed-back fleece hoodie, each carrying the crest alone, the
+        crest with the wordmark, or the wordmark large across the chest. Nine
+        colourways on the tee, six on the hoodie.
       </p>
 
       <h2>How we think about it</h2>
       <p>
-        No logo soup, no trend chasing &mdash; just fabric, fit and colour, done
-        properly. If a piece isn&rsquo;t something we&rsquo;d wear ourselves, it
-        doesn&rsquo;t make the range.
+        One mark, a short list of colours, and garments that hold their shape
+        through a year of washing. We would rather add a colour than a category, and
+        we would rather the print sat exactly where it should on every photograph
+        than show you something the garment will not do.
+      </p>
+
+      <h2>Where to find us</h2>
+      <p>
+        Online only for now, shipping to the United Kingdom and Ireland. Questions go
+        through the <a href="/contact">contact page</a>; replies come from a person.
       </p>
     </InfoPage>
   );

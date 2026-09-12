@@ -203,9 +203,9 @@ export default function Header() {
         </ul>
 
         <div className="nav-promo">
-          <p className="eyebrow">Summer / 26</p>
-          <p>Easy layers for the parts of the day that matter.</p>
-          <Link href="/shop">Shop the edit <span aria-hidden="true">→</span></Link>
+          <p className="eyebrow">The range</p>
+          <p>Tees and hoodies, three prints, one crest.</p>
+          <Link href="/shop">Shop all <span aria-hidden="true">→</span></Link>
         </div>
 
         <div className="nav-quick">

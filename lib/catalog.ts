@@ -392,22 +392,20 @@ const largeTextTee: Product = {
   name: "Large Text Tee",
   category: "men",
   type: "t-shirts",
-  // PROVISIONAL COPY — written to get the product on the page. Every string
-  // in this product is placeholder and is for the designers to replace with
-  // the real description, details and price.
   description:
-    "The wordmark, set large across the chest. Mid-weight cotton jersey with a "
-    + "set-in sleeve and a ribbed crew that holds its shape. Woven label at the "
-    + "nape. Nine colourways.",
+    "The Murrelet wordmark across the chest. A lightweight ringspun cotton "
+    + "tee with a narrow ribbed collar that holds its shape and a tubular body "
+    + "with no side seams. Cut in a modern classic fit — close through the "
+    + "shoulder, easy through the body. Soft from the first wash.",
   details: [
-    "PROVISIONAL — copy and price to be replaced by the design team",
-    "100% cotton jersey",
-    "Regular fit",
-    "Ribbed crew neck, woven neck label",
-    "Machine wash cold, dry flat",
+    "100% ringspun cotton, 150 gsm — heather colours include polyester",
+    "Modern classic fit — true to size",
+    "Narrow ribbed crew neck, taped neck and shoulders, tubular body",
+    "Machine wash at 30°C, inside out; do not tumble dry",
+    "Returns within 14 days — see Shipping & Returns",
   ],
   badges: ["NEW ARRIVAL"],
-  price: 3500,
+  price: 2400,
   variants: LARGE_TEXT_COLOURS.map(({ colour, swatch, shots: n }) => ({
     id: `large-text-tee-${colour.toLowerCase().replace(/\s+/g, "-")}`,
     colour,
@@ -454,22 +452,20 @@ const smallTextLogoTee: Product = {
   name: "Small Text Logo Tee",
   category: "men",
   type: "t-shirts",
-  // PROVISIONAL COPY — written to get the product on the page. Every string
-  // in this product is placeholder and is for the designers to replace with
-  // the real description, details and price.
   description:
-    "The crest and wordmark, set small at the left chest. Mid-weight cotton "
-    + "jersey with a set-in sleeve and a ribbed crew that holds its shape. "
-    + "Woven label at the nape. Nine colourways.",
+    "The crest and wordmark, small at the left chest. A lightweight ringspun "
+    + "cotton tee with a narrow ribbed collar that holds its shape and a "
+    + "tubular body with no side seams. Cut in a modern classic fit — close "
+    + "through the shoulder, easy through the body. Soft from the first wash.",
   details: [
-    "PROVISIONAL — copy and price to be replaced by the design team",
-    "100% cotton jersey",
-    "Regular fit",
-    "Ribbed crew neck, woven neck label",
-    "Machine wash cold, dry flat",
+    "100% ringspun cotton, 150 gsm — heather colours include polyester",
+    "Modern classic fit — true to size",
+    "Narrow ribbed crew neck, taped neck and shoulders, tubular body",
+    "Machine wash at 30°C, inside out; do not tumble dry",
+    "Returns within 14 days — see Shipping & Returns",
   ],
   badges: ["NEW ARRIVAL"],
-  price: 3500,
+  price: 2400,
   variants: SMALL_TEXT_COLOURS.map(({ colour, swatch, shots: n, folder }) => {
     const dir = folder ?? colour.toLowerCase().replace(/\s+/g, "-");
     return {
@@ -515,22 +511,20 @@ const smallLogoTee: Product = {
   name: "Small Logo Tee",
   category: "men",
   type: "t-shirts",
-  // PROVISIONAL COPY — written to get the product on the page. Every string
-  // in this product is placeholder and is for the designers to replace with
-  // the real description, details and price.
   description:
-    "The crest alone, set small at the left chest. Mid-weight cotton jersey "
-    + "with a set-in sleeve and a ribbed crew that holds its shape. Woven "
-    + "label at the nape. Nine colourways.",
+    "The Murrelet crest, small at the left chest. A lightweight ringspun "
+    + "cotton tee with a narrow ribbed collar that holds its shape and a "
+    + "tubular body with no side seams. Cut in a modern classic fit — close "
+    + "through the shoulder, easy through the body. Soft from the first wash.",
   details: [
-    "PROVISIONAL — copy and price to be replaced by the design team",
-    "100% cotton jersey",
-    "Regular fit",
-    "Ribbed crew neck, woven neck label",
-    "Machine wash cold, dry flat",
+    "100% ringspun cotton, 150 gsm — heather colours include polyester",
+    "Modern classic fit — true to size",
+    "Narrow ribbed crew neck, taped neck and shoulders, tubular body",
+    "Machine wash at 30°C, inside out; do not tumble dry",
+    "Returns within 14 days — see Shipping & Returns",
   ],
   badges: ["NEW ARRIVAL"],
-  price: 3500,
+  price: 2400,
   variants: SMALL_LOGO_COLOURS.map(({ colour, swatch, shots: n, folder }) => {
     const dir = folder ?? colour.toLowerCase().replace(/\s+/g, "-");
     return {
@@ -586,22 +580,21 @@ const largeTextHoodie: Product = {
   name: "Large Text Hoodie",
   category: "men",
   type: "hoodies",
-  // PROVISIONAL COPY — written to get the product on the page. Every string
-  // in this product is placeholder and is for the designers to replace with
-  // the real description, details and price.
   description:
-    "The wordmark, set large across the chest. Brushed-back cotton-rich fleece "
-    + "with a double-layer hood, kangaroo pocket and ribbed cuffs and hem. "
-    + "Woven label inside the hood. Six colourways.",
+    "The Murrelet wordmark across the chest. A 280 gsm brushed-back fleece "
+    + "with a double-fabric hood, kangaroo pocket and ribbed cuffs and hem. "
+    + "Cotton-faced so the print sits cleanly, with polyester in the blend so "
+    + "it keeps its shape. Regular fit with room to layer. Woven label inside "
+    + "the hood.",
   details: [
-    "PROVISIONAL — copy and price to be replaced by the design team",
-    "80% ringspun cotton, 20% polyester brushed-back fleece",
-    "Regular fit",
-    "Double-layer hood, kangaroo pocket, ribbed cuffs and hem",
-    "Machine wash cold, dry flat",
+    "80% ringspun cotton, 20% polyester brushed-back fleece, 280 gsm",
+    "Regular fit — true to size; size up for an oversized look",
+    "Double-fabric hood, kangaroo pocket, ribbed cuffs and hem, twin-needle stitching",
+    "Machine wash at 30°C, inside out; do not tumble dry",
+    "Returns within 14 days — see Shipping & Returns",
   ],
   badges: ["NEW ARRIVAL"],
-  price: 3500,
+  price: 4800,
   variants: LARGE_TEXT_HOODIE_COLOURS.map(({ colour, swatch, shots: n, folder }) => {
     const dir = folder ?? colour.toLowerCase().replace(/\s+/g, "-");
     return {
@@ -648,11 +641,11 @@ const SMALL_HOODIE_COLOURS: {
 ];
 
 const HOODIE_DETAILS = [
-  "PROVISIONAL — copy and price to be replaced by the design team",
-  "80% ringspun cotton, 20% polyester brushed-back fleece",
-  "Regular fit",
-  "Double-layer hood, kangaroo pocket, ribbed cuffs and hem",
-  "Machine wash cold, dry flat",
+  "80% ringspun cotton, 20% polyester brushed-back fleece, 280 gsm",
+  "Regular fit — true to size; size up for an oversized look",
+  "Double-fabric hood, kangaroo pocket, ribbed cuffs and hem, twin-needle stitching",
+  "Machine wash at 30°C, inside out; do not tumble dry",
+  "Returns within 14 days — see Shipping & Returns",
 ];
 
 function smallHoodie(
@@ -667,16 +660,11 @@ function smallHoodie(
     name,
     category: "men",
     type: "hoodies",
-    // PROVISIONAL COPY — see the tees; every string here is for the design
-    // team to replace.
     description:
-      lead
-      + " Brushed-back cotton-rich fleece with a double-layer hood, kangaroo "
-      + "pocket and ribbed cuffs and hem. Woven label inside the hood. Six "
-      + "colourways.",
+      lead + " A 280 gsm brushed-back fleece with a double-fabric hood, kangaroo pocket and ribbed cuffs and hem. Cotton-faced so the print sits cleanly, with polyester in the blend so it keeps its shape. Regular fit with room to layer. Woven label inside the hood.",
     details: HOODIE_DETAILS,
     badges: ["NEW ARRIVAL"],
-    price: 3500,
+    price: 4800,
     variants: SMALL_HOODIE_COLOURS.map(({ colour, swatch, shots: n, folder }) => {
       const dir = folder ?? colour.toLowerCase().replace(/\s+/g, "-");
       return {
@@ -695,14 +683,14 @@ const smallLogoHoodie = smallHoodie(
   "small-logo-hoodie",
   "Small Logo Hoodie",
   "small-logo",
-  "The crest alone, set small at the left chest."
+  "The Murrelet crest, small at the left chest."
 );
 
 const smallTextLogoHoodie = smallHoodie(
   "small-text-logo-hoodie",
   "Small Text Logo Hoodie",
   "small-text-logo",
-  "The crest and wordmark, set small at the left chest."
+  "The crest and wordmark, small at the left chest."
 );
 
 export const seedCatalog: Product[] = [

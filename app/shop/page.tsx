@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Shop all",
-  description: "Every style at Murrelet.",
+  description: "Every Murrelet tee and hoodie — three prints, in every colourway we make.",
 };
 
 export default async function ShopPage() {
