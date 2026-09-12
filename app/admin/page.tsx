@@ -599,12 +599,16 @@ export default function AdminPage() {
                             className="admin-input"
                             type="number"
                             step="0.01"
-                            value={(p.price / 100).toFixed(2)}
-                            onChange={(e) =>
-                              updateProduct(p.id, {
-                                price: Math.round(parseFloat(e.target.value || "0") * 100),
-                              })
-                            }
+                            min="0"
+                            inputMode="decimal"
+                            key={`${p.id}-price-${p.price}`}
+                            defaultValue={(p.price / 100).toFixed(2)}
+                            onBlur={(e) => {
+                              const pence = Math.round(parseFloat(e.target.value || "0") * 100);
+                              if (!Number.isNaN(pence) && pence !== p.price) {
+                                updateProduct(p.id, { price: Math.max(0, pence) });
+                              }
+                            }}
                           />
                         </label>
                         <label className="admin-field">
@@ -699,13 +703,16 @@ export default function AdminPage() {
                                 className="admin-input admin-input-price"
                                 type="number"
                                 step="0.01"
-                                value={v.price == null ? "" : (v.price / 100).toFixed(2)}
-                                onChange={(e) => {
-                                  const raw = e.target.value;
-                                  updateVariant(p.id, v.id, {
-                                    // Empty means "inherit", which is null — not 0.
-                                    price: raw === "" ? null : Math.round(parseFloat(raw) * 100),
-                                  });
+                                min="0"
+                                inputMode="decimal"
+                                key={`${v.id}-price-${v.price ?? "inherit"}`}
+                                defaultValue={v.price == null ? "" : (v.price / 100).toFixed(2)}
+                                onBlur={(e) => {
+                                  const raw = e.target.value.trim();
+                                  // Empty means "inherit", which is null — not 0.
+                                  const next = raw === "" ? null : Math.round(parseFloat(raw) * 100);
+                                  if (next !== null && Number.isNaN(next)) return;
+                                  if (next !== v.price) updateVariant(p.id, v.id, { price: next });
                                 }}
                                 placeholder="Override £"
                               />
@@ -743,7 +750,7 @@ export default function AdminPage() {
                                       }
                                       onClick={() => makeThumbnail(p.id, v.id, i)}
                                     >
-                                      {lead ? "Card" : "Use as card"}
+                                      {lead ? "Card" : "Use"}
                                     </button>
                                     <button
                                       type="button"
