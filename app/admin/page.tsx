@@ -648,6 +648,28 @@ export default function AdminPage() {
                           onChange={(e) => updateProduct(p.id, { description: e.target.value })}
                         />
                       </label>
+                      <label className="admin-field">
+                        <span>Details — one per line, shown as the bullet list under the description</span>
+                        <textarea
+                          className="admin-input"
+                          rows={Math.max(4, p.details.length + 1)}
+                          // Committed on blur, not per keystroke: splitting on
+                          // newline while typing would drop the line being
+                          // written the moment it is still empty.
+                          key={`${p.id}-details-${p.details.join("|")}`}
+                          defaultValue={p.details.join("\n")}
+                          onBlur={(e) => {
+                            const details = e.target.value
+                              .split("\n")
+                              .map((l) => l.trim())
+                              .filter(Boolean);
+                            if (details.join("|") !== p.details.join("|")) {
+                              updateProduct(p.id, { details });
+                            }
+                          }}
+                          placeholder={"100% organic cotton, 180gsm\nRegular fit\nMachine wash at 30°C"}
+                        />
+                      </label>
                     </section>
 
                     <section className="admin-section">
