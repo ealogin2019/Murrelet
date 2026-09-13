@@ -387,9 +387,12 @@ const LARGE_TEXT_COLOURS: { colour: string; swatch: string; shots: number }[] = 
 ];
 
 const largeTextTee: Product = {
+  // The id is the database key and the image folder; it keeps the engine's
+  // treatment name. The slug and name are the customer's, renamed 2026-09-13
+  // to name the MARK rather than its size: Wordmark, Crest, Signature.
   id: "large-text-tee",
-  slug: "large-text-tee",
-  name: "Large Text Tee",
+  slug: "wordmark-tee",
+  name: "Wordmark Tee",
   category: "men",
   type: "t-shirts",
   description:
@@ -448,8 +451,8 @@ const SMALL_TEXT_COLOURS: {
 
 const smallTextLogoTee: Product = {
   id: "small-text-logo-tee",
-  slug: "small-text-logo-tee",
-  name: "Small Text Logo Tee",
+  slug: "signature-tee",
+  name: "Signature Tee",
   category: "men",
   type: "t-shirts",
   description:
@@ -507,8 +510,8 @@ const SMALL_LOGO_COLOURS: {
 
 const smallLogoTee: Product = {
   id: "small-logo-tee",
-  slug: "small-logo-tee",
-  name: "Small Logo Tee",
+  slug: "crest-tee",
+  name: "Crest Tee",
   category: "men",
   type: "t-shirts",
   description:
@@ -576,8 +579,8 @@ const LARGE_TEXT_HOODIE_COLOURS: {
 
 const largeTextHoodie: Product = {
   id: "large-text-hoodie",
-  slug: "large-text-hoodie",
-  name: "Large Text Hoodie",
+  slug: "wordmark-hoodie",
+  name: "Wordmark Hoodie",
   category: "men",
   type: "hoodies",
   description:
@@ -649,13 +652,14 @@ const HOODIE_DETAILS = [
 ];
 
 function smallHoodie(
-  slug: "small-logo-hoodie" | "small-text-logo-hoodie",
+  id: "small-logo-hoodie" | "small-text-logo-hoodie",
+  slug: string,
   name: string,
   treatment: "small-logo" | "small-text-logo",
   lead: string
 ): Product {
   return {
-    id: slug,
+    id,
     slug,
     name,
     category: "men",
@@ -668,11 +672,11 @@ function smallHoodie(
     variants: SMALL_HOODIE_COLOURS.map(({ colour, swatch, shots: n, folder }) => {
       const dir = folder ?? colour.toLowerCase().replace(/\s+/g, "-");
       return {
-        id: `${slug}-${dir}`,
+        id: `${id}-${dir}`,
         colour,
         swatch,
         price: null,
-        images: shots(slug, dir, n),
+        images: shots(id, dir, n),
         skus: skuRun("hoodies", treatment, colour),
       };
     }),
@@ -681,14 +685,16 @@ function smallHoodie(
 
 const smallLogoHoodie = smallHoodie(
   "small-logo-hoodie",
-  "Small Logo Hoodie",
+  "crest-hoodie",
+  "Crest Hoodie",
   "small-logo",
   "The Murrelet crest, small at the left chest."
 );
 
 const smallTextLogoHoodie = smallHoodie(
   "small-text-logo-hoodie",
-  "Small Text Logo Hoodie",
+  "signature-hoodie",
+  "Signature Hoodie",
   "small-text-logo",
   "The crest and wordmark, small at the left chest."
 );

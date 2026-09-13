@@ -23,6 +23,12 @@ export default function ProductDetail({
 }) {
   const { addItem } = useCart();
   const [variantId, setVariantId] = useState<string | null>(initialColour ?? null);
+
+  // Split at the first full stop followed by a space. A description with no
+  // second sentence keeps its one sentence in the body and shows no subtitle.
+  const cut = product.description.search(/\. /);
+  const subtitle = cut > 0 ? product.description.slice(0, cut + 1) : null;
+  const body = cut > 0 ? product.description.slice(cut + 2) : product.description;
   const [sizeId, setSizeId] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
 
@@ -225,6 +231,12 @@ export default function ProductDetail({
 
         <div className="product-info">
           <h1>{product.name}</h1>
+          {/* The first sentence of the description, lifted above the price.
+              The name says which mark this is -- Wordmark, Crest, Signature
+              -- and this line says where it sits and how, so the name never
+              has to. The description below picks up from the second
+              sentence, so nothing is read twice. */}
+          {subtitle && <p className="product-subtitle">{subtitle}</p>}
 
           {/* Shows the price of the SELECTED colour, which is what
               add-to-bag charges. Displaying the product list price here
@@ -292,7 +304,7 @@ export default function ProductDetail({
             Free standard delivery over £100 &amp; returns within 14 days
           </p>
 
-          <p className="product-desc">{product.description}</p>
+          <p className="product-desc">{body}</p>
           <ul className="product-details">
             {product.details.map((d) => (
               <li key={d}>{d}</li>

@@ -1,5 +1,5 @@
-// Pushes description, details and price from lib/catalog.ts to the live rows
-// of the named products -- and ONLY those three columns.
+// Pushes name, slug, description, details and price from lib/catalog.ts to
+// the live rows of the named products -- the words, and ONLY the words.
 //
 //   npx tsx scripts/sync-copy.ts large-text-tee small-logo-tee          check
 //   npx tsx scripts/sync-copy.ts large-text-tee small-logo-tee --write  apply
@@ -35,7 +35,7 @@ async function main() {
     }
     const { data: live } = await db
       .from("products")
-      .select("id,price,description,details")
+      .select("id,name,slug,price,description,details")
       .eq("id", id)
       .maybeSingle();
     if (!live) {
@@ -43,13 +43,15 @@ async function main() {
       process.exit(1);
     }
     console.log(`${id}`);
+    if (live.name !== p.name) console.log(`   name         ${live.name} -> ${p.name}`);
+    if (live.slug !== p.slug) console.log(`   slug         /product/${live.slug} -> /product/${p.slug}`);
     console.log(`   price        £${(live.price / 100).toFixed(2)} -> £${(p.price / 100).toFixed(2)}`);
     console.log(`   description  ${live.description.slice(0, 50)}… -> ${p.description.slice(0, 50)}…`);
     console.log(`   details      ${live.details.length} lines -> ${p.details.length} lines`);
     if (write) {
       const { error } = await db
         .from("products")
-        .update({ price: p.price, description: p.description, details: p.details })
+        .update({ name: p.name, slug: p.slug, price: p.price, description: p.description, details: p.details })
         .eq("id", id);
       if (error) {
         console.error(`   FAILED: ${error.message}`);

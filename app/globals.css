@@ -373,6 +373,12 @@ img {
   letter-spacing: 0.01em;
 }
 
+.product-subtitle {
+  margin: -4px 0 14px;
+  font-size: 0.98rem;
+  color: var(--ink);
+}
+
 .product-price {
   font-size: 1.05rem;
   color: var(--muted);
