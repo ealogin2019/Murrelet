@@ -13,6 +13,7 @@ import {
   colourOptions,
 } from "@/lib/catalog";
 import { formatPrice } from "@/lib/format";
+import OrdersPanel from "./Orders";
 
 const CATEGORIES = categories;
 const PRODUCT_TYPES = productTypes;
@@ -33,6 +34,7 @@ type Toast = { id: number; kind: "ok" | "error"; text: string };
 
 export default function AdminPage() {
   const router = useRouter();
+  const [tab, setTab] = useState<"products" | "orders">("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -427,6 +429,23 @@ export default function AdminPage() {
       <div className="admin-topbar">
         <div className="wrap admin-topbar-inner">
           <span className="logo">Murrelet Admin</span>
+          <div className="admin-tabs">
+            <button
+              className={`admin-tab ${tab === "products" ? "is-active" : ""}`}
+              onClick={() => setTab("products")}
+            >
+              Products
+            </button>
+            <button
+              className={`admin-tab ${tab === "orders" ? "is-active" : ""}`}
+              onClick={() => {
+                if (dirty && !confirm("You have unsaved product changes. Leave them for now?")) return;
+                setTab("orders");
+              }}
+            >
+              Orders
+            </button>
+          </div>
           <p className="admin-count">
             {products.length} products · {colourCount} colours · {skuCount} SKUs
           </p>
@@ -436,6 +455,10 @@ export default function AdminPage() {
         </div>
       </div>
 
+      {tab === "orders" && <OrdersPanel toast={toast} />}
+
+      {tab === "products" && (
+      <>
       <div className="admin-actionbar">
         <div className="wrap admin-actionbar-inner">
           <div className="admin-actionbar-left">
@@ -897,6 +920,9 @@ export default function AdminPage() {
           })}
         </div>
       </div>
+
+      </>
+      )}
 
       <div className="admin-toasts" role="status" aria-live="polite">
         {toasts.map((t) => (

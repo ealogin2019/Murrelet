@@ -51,6 +51,8 @@ export async function POST(req: NextRequest) {
 
       const result = await markOrderPaid(session.id, {
         email: session.customer_details?.email ?? null,
+        // The label needs a name on it; Stripe collected one with the address.
+        customerName: session.customer_details?.name ?? null,
         paymentIntent:
           typeof session.payment_intent === "string"
             ? session.payment_intent

@@ -30,6 +30,12 @@ async function main() {
     id: "test",
     orderNumber: "MUR-TEST-000000",
     email: to,
+    customerName: "Test Customer",
+    shipment: {
+      carrier: null, trackingNumber: null, trackingUrl: null, labelPath: null,
+      sendcloudParcelId: null, carrierCostPence: null, labelCreatedAt: null,
+      shippedAt: null, deliveredAt: null,
+    },
     status: "paid",
     subtotalPence: 7000,
     shippingPence: 495,

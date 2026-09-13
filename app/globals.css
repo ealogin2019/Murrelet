@@ -1538,6 +1538,144 @@ img {
   padding: 0;
 }
 
+/* Orders: the fulfilment desk. */
+.admin-orders-mode {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+.admin-orders-mode .is-test { color: #8a5a00; }
+.admin-orders-mode .is-off { color: #a5312a; }
+
+.admin-empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.admin-order-head {
+  display: grid;
+  grid-template-columns: 170px 1fr auto auto;
+  gap: 18px;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+}
+
+.admin-order-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-order-id code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+}
+
+.admin-order-date,
+.admin-order-who span {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.admin-order-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-order-who strong {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.admin-order-sum {
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Four fixed stages, done ones inked. Reads at a glance down a list. */
+.admin-stages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 4px;
+}
+
+.admin-stages li {
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.admin-stages li.is-done {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+.admin-order-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding-top: 8px;
+}
+
+.admin-order-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.admin-order-items li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-order-items li span { color: var(--muted); white-space: nowrap; }
+
+.admin-order-totals,
+.admin-order-track,
+.admin-order-note {
+  font-size: 0.76rem;
+  color: var(--muted);
+  margin: 8px 0 0;
+}
+
+.admin-order-addr {
+  font-size: 0.88rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.admin-order-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.admin-order-actions .admin-btn { text-decoration: none; }
+
+@media (max-width: 720px) {
+  .admin-order-head { grid-template-columns: 1fr; gap: 8px; }
+  .admin-order-cols { grid-template-columns: 1fr; }
+}
+
 /* Stock per size: one compact cell per size, tick = on sale, box = count. */
 .admin-stock-row {
   display: flex;

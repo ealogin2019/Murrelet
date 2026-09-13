@@ -46,12 +46,16 @@ async function verifySessionToken(token: string | undefined | null): Promise<boo
  * While the store is in development the WHOLE site sits behind a password,
  * not just /admin.
  *
- * Two exemptions, both deliberate:
+ * Three exemptions, all deliberate:
  *
  *   /api/stripe/webhook   Stripe cannot present a password. It authenticates
  *                         with a signature over the raw body instead, which is
  *                         stronger than basic auth, and gating it would mean
  *                         paid orders silently never reach the database.
+ *
+ *   /api/sendcloud/webhook  Same reasoning for the carrier's scans. It carries
+ *                         a shared secret in its query string and an optional
+ *                         HMAC, and is the thing that marks orders shipped.
  *
  *   _next/static, images  Served before middleware in most cases and useless
  *                         on their own; gating them only breaks the login
@@ -62,7 +66,7 @@ async function verifySessionToken(token: string | undefined | null): Promise<boo
  * environment variable should not be the difference between private and
  * launched. Development is never gated, so local work is unaffected.
  */
-const PUBLIC_PREFIXES = ["/api/stripe/webhook"];
+const PUBLIC_PREFIXES = ["/api/stripe/webhook", "/api/sendcloud/webhook"];
 
 function unauthorized(message: string) {
   return new NextResponse(message, {

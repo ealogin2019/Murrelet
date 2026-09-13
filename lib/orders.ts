@@ -21,11 +21,25 @@ export type OrderLine = {
   imageUrl: string | null;
 };
 
+export type Shipment = {
+  carrier: string | null;
+  trackingNumber: string | null;
+  trackingUrl: string | null;
+  labelPath: string | null;
+  sendcloudParcelId: number | null;
+  carrierCostPence: number | null;
+  labelCreatedAt: string | null;
+  shippedAt: string | null;
+  deliveredAt: string | null;
+};
+
 export type Order = {
   id: string;
   orderNumber: string;
   email: string | null;
+  customerName: string | null;
   status: string;
+  shipment: Shipment;
   subtotalPence: number;
   shippingPence: number;
   totalPence: number | null;
@@ -111,6 +125,7 @@ export async function markOrderPaid(
   sessionId: string,
   details: {
     email: string | null;
+    customerName: string | null;
     paymentIntent: string | null;
     shippingPence: number;
     totalPence: number;
@@ -122,6 +137,7 @@ export async function markOrderPaid(
     .update({
       status: "paid",
       email: details.email,
+      customer_name: details.customerName,
       stripe_payment_intent: details.paymentIntent,
       shipping_pence: details.shippingPence,
       total_pence: details.totalPence,
@@ -140,30 +156,35 @@ export async function markOrderPaid(
   };
 }
 
-export async function getOrderBySession(sessionId: string): Promise<Order | null> {
-  const { data, error } = await supabaseAdmin()
-    .from("orders")
-    .select(
-      "id,order_number,email,status,subtotal_pence,shipping_pence,total_pence,created_at,shipping_address," +
-        "order_items(sku_id,product_name,colour,size,unit_price_pence,quantity,image_url)"
-    )
-    .eq("stripe_session_id", sessionId)
-    .maybeSingle();
+const ORDER_SELECT =
+  "id,order_number,email,customer_name,status,subtotal_pence,shipping_pence,total_pence,created_at,shipping_address," +
+  "carrier,tracking_number,tracking_url,label_path,sendcloud_parcel_id,carrier_cost_pence," +
+  "label_created_at,shipped_at,delivered_at," +
+  "order_items(sku_id,product_name,colour,size,unit_price_pence,quantity,image_url)";
 
-  if (error) throw new Error(`Failed to load order: ${error.message}`);
-  if (!data) return null;
-
-  const row = data as any;
+function toOrder(row: any): Order {
   return {
     id: row.id,
     orderNumber: row.order_number,
     email: row.email,
+    customerName: row.customer_name ?? null,
     status: row.status,
     subtotalPence: row.subtotal_pence,
     shippingPence: row.shipping_pence,
     totalPence: row.total_pence,
     createdAt: row.created_at,
     shippingAddress: row.shipping_address ?? null,
+    shipment: {
+      carrier: row.carrier ?? null,
+      trackingNumber: row.tracking_number ?? null,
+      trackingUrl: row.tracking_url ?? null,
+      labelPath: row.label_path ?? null,
+      sendcloudParcelId: row.sendcloud_parcel_id ?? null,
+      carrierCostPence: row.carrier_cost_pence ?? null,
+      labelCreatedAt: row.label_created_at ?? null,
+      shippedAt: row.shipped_at ?? null,
+      deliveredAt: row.delivered_at ?? null,
+    },
     items: (row.order_items ?? []).map((i: any) => ({
       skuId: i.sku_id,
       productName: i.product_name,
@@ -174,6 +195,114 @@ export async function getOrderBySession(sessionId: string): Promise<Order | null
       imageUrl: i.image_url,
     })),
   };
+}
+
+export async function getOrderBySession(sessionId: string): Promise<Order | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("orders")
+    .select(ORDER_SELECT)
+    .eq("stripe_session_id", sessionId)
+    .maybeSingle();
+  if (error) throw new Error(`Failed to load order: ${error.message}`);
+  return data ? toOrder(data) : null;
+}
+
+export async function getOrderById(id: string): Promise<Order | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("orders")
+    .select(ORDER_SELECT)
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(`Failed to load order: ${error.message}`);
+  return data ? toOrder(data) : null;
+}
+
+export async function getOrderByParcel(parcelId: number): Promise<Order | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("orders")
+    .select(ORDER_SELECT)
+    .eq("sendcloud_parcel_id", parcelId)
+    .maybeSingle();
+  if (error) throw new Error(`Failed to load order: ${error.message}`);
+  return data ? toOrder(data) : null;
+}
+
+/** Everything that has been paid for, newest first. Pending rows are
+ *  abandoned checkouts and are not the admin's business. */
+export async function listOrders(limit = 200): Promise<Order[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("orders")
+    .select(ORDER_SELECT)
+    .neq("status", "pending")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Failed to list orders: ${error.message}`);
+  return (data ?? []).map(toOrder);
+}
+
+/** Records a label. The status does NOT change: a label is not a shipment. */
+export async function saveShipment(
+  orderId: string,
+  s: {
+    carrier: string | null;
+    trackingNumber: string;
+    trackingUrl: string;
+    labelPath: string | null;
+    sendcloudParcelId: number;
+    carrierCostPence: number | null;
+  }
+) {
+  const { error } = await supabaseAdmin()
+    .from("orders")
+    .update({
+      carrier: s.carrier,
+      tracking_number: s.trackingNumber,
+      tracking_url: s.trackingUrl,
+      label_path: s.labelPath,
+      sendcloud_parcel_id: s.sendcloudParcelId,
+      carrier_cost_pence: s.carrierCostPence,
+      label_created_at: new Date().toISOString(),
+    })
+    .eq("id", orderId);
+  if (error) throw new Error(`Failed to save shipment: ${error.message}`);
+}
+
+/**
+ * paid -> shipped, once. Returns whether THIS call made the transition, so a
+ * carrier scan and a button press racing for the same order send one email
+ * between them, not two.
+ */
+export async function markOrderShipped(orderId: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin()
+    .from("orders")
+    .update({ status: "shipped", shipped_at: new Date().toISOString() })
+    .eq("id", orderId)
+    .eq("status", "paid")
+    .select("id");
+  if (error) throw new Error(`Failed to mark shipped: ${error.message}`);
+  return Boolean(data?.length);
+}
+
+export async function markOrderDelivered(orderId: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin()
+    .from("orders")
+    .update({ status: "delivered", delivered_at: new Date().toISOString() })
+    .eq("id", orderId)
+    .in("status", ["paid", "shipped"])
+    .select("id");
+  if (error) throw new Error(`Failed to mark delivered: ${error.message}`);
+  return Boolean(data?.length);
+}
+
+/**
+ * Garment family from the numeric SKU: digits 3-4 are the garment code
+ * (90 tees, 91 hoodies -- see lib/catalog.ts). Order lines snapshot no type
+ * of their own, and the number was designed to carry exactly this.
+ */
+export function garmentTypeFromSku(skuId: string | null): string | null {
+  if (!skuId || !/^\d{10}$/.test(skuId)) return null;
+  const t: Record<string, string> = { "90": "t-shirts", "91": "hoodies", "92": "sweatshirts" };
+  return t[skuId.slice(2, 4)] ?? null;
 }
 
 /**

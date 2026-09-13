@@ -19,6 +19,12 @@ const FIXTURE: Order = {
   id: "fixture",
   orderNumber: "MUR-260826-K7QW2M",
   email: "preview@example.com",
+  customerName: "Preview Customer",
+  shipment: {
+    carrier: null, trackingNumber: null, trackingUrl: null, labelPath: null,
+    sendcloudParcelId: null, carrierCostPence: null, labelCreatedAt: null,
+    shippedAt: null, deliveredAt: null,
+  },
   status: "paid",
   subtotalPence: 12000,
   shippingPence: 495,
@@ -61,7 +67,7 @@ async function realOrder(): Promise<Order | null> {
     const { data } = await supabaseAdmin()
       .from("orders")
       .select(
-        "id,order_number,email,status,subtotal_pence,shipping_pence,total_pence," +
+        "id,order_number,email,customer_name,status,subtotal_pence,shipping_pence,total_pence," +
           "created_at,shipping_address,order_items(sku_id,product_name,colour,size," +
           "unit_price_pence,quantity,image_url)"
       )
@@ -75,6 +81,12 @@ async function realOrder(): Promise<Order | null> {
       id: row.id,
       orderNumber: row.order_number,
       email: row.email ?? "preview@example.com",
+      customerName: row.customer_name ?? null,
+      shipment: {
+        carrier: null, trackingNumber: null, trackingUrl: null, labelPath: null,
+        sendcloudParcelId: null, carrierCostPence: null, labelCreatedAt: null,
+        shippedAt: null, deliveredAt: null,
+      },
       status: row.status,
       subtotalPence: row.subtotal_pence,
       shippingPence: row.shipping_pence,
