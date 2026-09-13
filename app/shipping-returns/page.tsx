@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import InfoPage from "@/components/InfoPage";
 
 export const metadata: Metadata = {
-  title: "Shipping & Returns — Murrelet",
+  title: "Shipping & Returns",
   description: "Delivery times, costs, and how to return an order.",
 };
 
@@ -34,17 +34,28 @@ export default function ShippingReturnsPage() {
 
       <h2>Returns</h2>
       <p>
-        You can return an unworn, unwashed item in its original condition within{" "}
-        <strong>14 days</strong> of delivery for a refund.
+        You can return an unworn, unwashed item in its original condition, labels
+        attached, within <strong>14 days</strong> of delivery for a refund of the item
+        and the standard delivery charge.
       </p>
+      <p>How it works:</p>
+      <ol>
+        <li>
+          Email <a href="mailto:support@murrelet.co.uk">support@murrelet.co.uk</a>{" "}
+          within 14 days of delivery with your order number and what you are returning.
+        </li>
+        <li>We reply with the return address and log the return against your order.</li>
+        <li>
+          Post it back within 14 days of that email, using a tracked service. Return
+          postage for a change of mind is paid by you; we will suggest the cheapest
+          tracked option.
+        </li>
+        <li>We refund to your original payment method within 14 days of receiving it.</li>
+      </ol>
       <p>
         If you&apos;re in the UK, this is on top of your statutory right to cancel an
         online order within 14 days of receiving it under the Consumer Contracts
         Regulations 2013, regardless of any policy stated here.
-      </p>
-      <p className="placeholder-flag">
-        Return address and process (postal return vs. prepaid label) — add before
-        launch.
       </p>
 
       <h2>Damaged or incorrect items</h2>

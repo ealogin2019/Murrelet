@@ -354,16 +354,29 @@ function skuNumber(
   return `${HOUSE}${GARMENT_NUMBER[type]}${TREATMENT_NUMBER[treatment]}${c}${z}`;
 }
 
+/**
+ * Sizes the supplier does not make, per garment. The SKU is still issued --
+ * numbers are append-only and the size run is shared across colours -- but
+ * it is off sale from the start rather than sold and then unfulfillable.
+ *
+ * The Gildan tee's spec sheet runs S to 5XL; there is no XS. Decided by the
+ * owner 2026-09-13. The AWDis hoodie has an XS and keeps it.
+ */
+const NOT_MADE: Partial<Record<ProductType, string[]>> = {
+  "t-shirts": ["XS"],
+};
+
 function skuRun(
   type: ProductType,
   treatment: TreatmentKey,
   colour: string,
   sizes: string[] = SHIRT_SIZES
 ): Sku[] {
+  const off = NOT_MADE[type] ?? [];
   return sizes.map((size) => ({
     id: skuNumber(type, treatment, colour, size),
     size,
-    inStock: true,
+    inStock: !off.includes(size),
     stock: null,
   }));
 }

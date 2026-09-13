@@ -141,6 +141,23 @@ export default function AdminPage() {
     );
   }
 
+  function updateSku(productId: string, variantId: string, skuId: string, patch: Partial<Sku>) {
+    edit((prev) =>
+      prev.map((p) =>
+        p.id === productId
+          ? {
+              ...p,
+              variants: p.variants.map((v) =>
+                v.id === variantId
+                  ? { ...v, skus: v.skus.map((s) => (s.id === skuId ? { ...s, ...patch } : s)) }
+                  : v
+              ),
+            }
+          : p
+      )
+    );
+  }
+
   function newVariant(
     productId: string,
     sizes: string[],
@@ -806,6 +823,64 @@ export default function AdminPage() {
                                   No photo yet — saving is blocked until this colour has one
                                 </span>
                               )}
+                            </div>
+
+                            {/* Stock per size. Blank is "not tracked": the size
+                                sells without counting, which is how every SKU
+                                started. A number turns counting on for that size
+                                -- the webhook takes sales off it and puts the
+                                size off sale at zero. The tick is the on-sale
+                                switch itself, so a size the supplier does not
+                                make can be held off without a count. */}
+                            <div className="admin-stock-row">
+                              <span className="admin-stock-label">Stock</span>
+                              {v.skus.map((s) => (
+                                <label
+                                  key={s.id}
+                                  className={`admin-stock-cell ${s.inStock ? "" : "is-off"}`}
+                                  title={
+                                    s.inStock
+                                      ? `${s.size} is on sale`
+                                      : `${s.size} is off sale`
+                                  }
+                                >
+                                  <span className="admin-stock-size">
+                                    <input
+                                      type="checkbox"
+                                      checked={s.inStock}
+                                      onChange={(e) =>
+                                        updateSku(p.id, v.id, s.id, { inStock: e.target.checked })
+                                      }
+                                      aria-label={`${s.size} on sale`}
+                                    />
+                                    {s.size}
+                                  </span>
+                                  <input
+                                    className="admin-input admin-stock-input"
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    inputMode="numeric"
+                                    key={`${s.id}-stock-${s.stock ?? "untracked"}`}
+                                    defaultValue={s.stock ?? ""}
+                                    placeholder="–"
+                                    onBlur={(e) => {
+                                      const raw = e.target.value.trim();
+                                      const next = raw === "" ? null : Math.max(0, Math.round(Number(raw)));
+                                      if (next !== null && Number.isNaN(next)) return;
+                                      if (next !== s.stock) {
+                                        updateSku(p.id, v.id, s.id, {
+                                          stock: next,
+                                          // A count of zero is off sale by definition;
+                                          // a count above zero puts it back on.
+                                          ...(next === 0 ? { inStock: false } : {}),
+                                          ...(next !== null && next > 0 && !s.inStock ? { inStock: true } : {}),
+                                        });
+                                      }
+                                    }}
+                                  />
+                                </label>
+                              ))}
                             </div>
                           </div>
                         );

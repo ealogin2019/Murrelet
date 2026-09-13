@@ -1538,6 +1538,60 @@ img {
   padding: 0;
 }
 
+/* Stock per size: one compact cell per size, tick = on sale, box = count. */
+.admin-stock-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.admin-stock-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-right: 4px;
+  padding-bottom: 8px;
+}
+
+.admin-stock-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 58px;
+}
+
+.admin-stock-cell.is-off .admin-stock-size {
+  color: #a5312a;
+  text-decoration: line-through;
+}
+
+.admin-stock-size {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--ink);
+}
+
+.admin-stock-size input {
+  margin: 0;
+  width: 13px;
+  height: 13px;
+}
+
+.admin-stock-input {
+  padding: 5px 6px;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.admin-stock-input::placeholder {
+  color: #bbb;
+}
+
 .admin-image-add {
   width: 64px;
   height: 82px;
