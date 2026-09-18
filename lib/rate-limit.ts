@@ -7,7 +7,7 @@
 // increment happens inside a single statement (see the admin_rate_limit
 // function) rather than as a read-then-write from the app.
 
-import { supabaseAdmin, supabaseConfigured } from "./supabase";
+import { db, dbConfigured } from "./db";
 
 const MAX_ATTEMPTS = 8;
 const WINDOW = "10 minutes";
@@ -22,18 +22,15 @@ export async function checkRateLimit(key: string): Promise<RateLimitResult> {
   // than locking the owner out of their own admin panel — the password is
   // what actually guards this, and a broken limiter must not become an
   // outage.
-  if (!supabaseConfigured()) return { allowed: true, retryAfterSeconds: 0 };
+  if (!dbConfigured()) return { allowed: true, retryAfterSeconds: 0 };
 
   try {
-    const { data, error } = await supabaseAdmin()
-      .rpc("admin_rate_limit", {
-        p_key: key,
-        p_max: MAX_ATTEMPTS,
-        p_window: WINDOW,
-      })
-      .single<{ allowed: boolean; retry_after: number }>();
-
-    if (error || !data) throw error ?? new Error("no rate limit row returned");
+    const rows = (await db()`
+      select allowed, retry_after
+      from admin_rate_limit(${key}, ${MAX_ATTEMPTS}, ${WINDOW}::interval)
+    `) as { allowed: boolean; retry_after: number }[];
+    const data = rows[0];
+    if (!data) throw new Error("no rate limit row returned");
     return { allowed: data.allowed, retryAfterSeconds: data.retry_after };
   } catch (err) {
     // Same reasoning as above: fail open, but loudly, so a database problem
@@ -44,9 +41,9 @@ export async function checkRateLimit(key: string): Promise<RateLimitResult> {
 }
 
 export async function clearRateLimit(key: string): Promise<void> {
-  if (!supabaseConfigured()) return;
+  if (!dbConfigured()) return;
   try {
-    await supabaseAdmin().rpc("admin_rate_limit_clear", { p_key: key });
+    await db()`select admin_rate_limit_clear(${key})`;
   } catch (err) {
     console.error("Rate limit clear failed:", err);
   }

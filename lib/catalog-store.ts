@@ -1,15 +1,14 @@
-// Catalog persistence against Supabase.
+// Catalog persistence against Postgres (Neon).
 //
-// This is the seam lib/blob-store.ts used to hold. Reads go through the anon
-// client and are gated by RLS (active products only); writes use the service
-// role and must only ever run in a server route.
+// This is the seam lib/blob-store.ts used to hold. Reads return active
+// products only; writes must only ever run in a server route.
 //
 // The DB is snake_case and the app is camelCase — that translation lives here
 // and nowhere else.
 
 import { createHash } from "crypto";
 import { Product, Variant, Sku, Category, ProductType, seedCatalog } from "./catalog";
-import { supabaseAdmin, supabasePublic, supabaseConfigured } from "./supabase";
+import { db, dbConfigured } from "./db";
 
 type ProductRow = {
   id: string;
@@ -43,14 +42,9 @@ type SkuRow = {
   position: number;
 };
 
-const SELECT =
-  "id,slug,name,category,type,description,details,badges,price,position," +
-  "variants(id,colour,swatch,price,images,position," +
-  "skus(id,size,in_stock,stock,position))";
-
 function toProduct(row: ProductRow): Product {
-  // PostgREST does not order embedded rows, so sort here rather than trusting
-  // whatever order the join happens to return.
+  // The query orders the nested arrays, but sort here too rather than trust
+  // whatever order a future edit of it happens to return.
   const variants: Variant[] = [...(row.variants ?? [])]
     .sort((a, b) => a.position - b.position)
     .map((v) => ({
@@ -86,18 +80,26 @@ function toProduct(row: ProductRow): Product {
 /**
  * The catalog, for every reader in the app.
  *
- * With no Supabase credentials (a fresh clone) this returns the seed so the
+ * With no DATABASE_URL (a fresh clone) this returns the seed so the
  * site still runs. With credentials it queries — and a query failure throws
  * rather than silently serving seed data, because a store quietly falling
  * back to fake products is worse than a store that errors.
  */
 export async function getCatalog(): Promise<Product[]> {
-  if (!supabaseConfigured()) return seedCatalog;
+  if (!dbConfigured()) {
+    // A fresh clone gets the seed. A production build without DATABASE_URL
+    // fails here on purpose: the alternative is a live store serving the
+    // showcase placeholders as if they were the catalogue.
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("DATABASE_URL is not set; refusing to serve the seed catalog in production.");
+    }
+    return seedCatalog;
+  }
   try {
     return await getCatalogFromDb();
   } catch (error) {
-    // Keep local design and preview work usable when the configured Supabase
-    // project is asleep, unreachable, or temporarily unavailable. Production
+    // Keep local design and preview work usable when the configured database
+    // is unreachable or temporarily unavailable. Production
     // still throws so a live store never quietly serves stale seed products.
     if (process.env.NODE_ENV === "development") {
       console.warn("Catalog unavailable in development; using seed catalog.", error);
@@ -132,25 +134,40 @@ export async function saveCatalog(products: Product[]): Promise<void> {
 }
 
 export async function getCatalogFromDb(): Promise<Product[]> {
-  const { data, error } = await supabasePublic()
-    .from("products")
-    .select(SELECT)
-    .eq("active", true)
-    .order("position");
-
-  if (error) throw new Error(`Failed to load catalog: ${error.message}`);
-  return ((data ?? []) as unknown as ProductRow[]).map(toProduct);
+  // One round trip: the variants and skus come back nested as JSON.
+  const rows = (await db()`
+    select p.id, p.slug, p.name, p.category, p.type, p.description, p.details,
+           p.badges, p.price, p.position,
+           coalesce((
+             select jsonb_agg(jsonb_build_object(
+               'id', v.id, 'colour', v.colour, 'swatch', v.swatch, 'price', v.price,
+               'images', v.images, 'position', v.position,
+               'skus', coalesce((
+                 select jsonb_agg(jsonb_build_object(
+                   'id', s.id, 'size', s.size, 'in_stock', s.in_stock,
+                   'stock', s.stock, 'position', s.position
+                 ) order by s.position)
+                 from skus s where s.variant_id = v.id
+               ), '[]'::jsonb)
+             ) order by v.position)
+             from variants v where v.product_id = p.id
+           ), '[]'::jsonb) as variants
+    from products p
+    where p.active
+    order by p.position
+  `) as ProductRow[];
+  return rows.map(toProduct);
 }
 
 /**
- * Replaces the catalog wholesale.
+ * Replaces the catalog wholesale, in one transaction.
  *
  * Products absent from `products` are deleted; variants and skus cascade from
  * that. Rows are upserted rather than dropped-and-recreated so that a sku id
  * referenced by an existing order_item survives an edit.
  */
 export async function saveCatalogToDb(products: Product[]): Promise<void> {
-  const db = supabaseAdmin();
+  const sql = db();
 
   const keepProducts = products.map((p) => p.id);
   const keepVariants = products.flatMap((p) => p.variants.map((v) => v.id));
@@ -158,22 +175,10 @@ export async function saveCatalogToDb(products: Product[]): Promise<void> {
     p.variants.flatMap((v) => v.skus.map((s) => s.id))
   );
 
-  // Upsert resolves conflicts on the primary key, but `slug` carries its own
-  // unique constraint. If a product keeps its slug and changes its id, the
-  // insert collides on slug instead of updating. Clear exactly those rows
-  // first — same slug, different id — and nothing else.
-  if (keepProducts.length) {
-    const slugs = products.map((p) => `"${p.slug}"`).join(",");
-    const ids = keepProducts.map((id) => `"${id}"`).join(",");
-    const { error } = await db
-      .from("products")
-      .delete()
-      .filter("slug", "in", `(${slugs})`)
-      .filter("id", "not.in", `(${ids})`);
-    if (error) throw new Error(`Failed to clear renamed products: ${error.message}`);
-  }
-
-  const { error: pErr } = await db.from("products").upsert(
+  // Rows travel as one JSON document per table and are unpacked by
+  // jsonb_to_recordset, so each table is a single statement however many
+  // rows it has.
+  const productRows = JSON.stringify(
     products.map((p, i) => ({
       id: p.id,
       slug: p.slug,
@@ -184,66 +189,83 @@ export async function saveCatalogToDb(products: Product[]): Promise<void> {
       details: p.details,
       badges: p.badges,
       price: p.price,
-      active: true,
       position: i,
     }))
   );
-  if (pErr) throw new Error(`Failed to save products: ${pErr.message}`);
-
-  const variantRows = products.flatMap((p) =>
-    p.variants.map((v, i) => ({
-      id: v.id,
-      product_id: p.id,
-      colour: v.colour,
-      swatch: v.swatch,
-      price: v.price,
-      images: v.images,
-      position: i,
-    }))
-  );
-  if (variantRows.length) {
-    const { error } = await db.from("variants").upsert(variantRows);
-    if (error) throw new Error(`Failed to save colours: ${error.message}`);
-  }
-
-  const skuRows = products.flatMap((p) =>
-    p.variants.flatMap((v) =>
-      v.skus.map((s, i) => ({
-        id: s.id,
-        variant_id: v.id,
-        size: s.size,
-        in_stock: s.inStock,
-        stock: s.stock,
+  const variantRows = JSON.stringify(
+    products.flatMap((p) =>
+      p.variants.map((v, i) => ({
+        id: v.id,
+        product_id: p.id,
+        colour: v.colour,
+        swatch: v.swatch,
+        price: v.price,
+        images: v.images,
         position: i,
       }))
     )
   );
-  if (skuRows.length) {
-    const { error } = await db.from("skus").upsert(skuRows);
-    if (error) throw new Error(`Failed to save sizes: ${error.message}`);
+  const skuRows = JSON.stringify(
+    products.flatMap((p) =>
+      p.variants.flatMap((v) =>
+        v.skus.map((s, i) => ({
+          id: s.id,
+          variant_id: v.id,
+          size: s.size,
+          in_stock: s.inStock,
+          stock: s.stock,
+          position: i,
+        }))
+      )
+    )
+  );
+
+  try {
+    await sql.transaction([
+      // Upsert resolves conflicts on the primary key, but `slug` carries its
+      // own unique constraint. If a product keeps its slug and changes its
+      // id, the insert collides on slug instead of updating. Clear exactly
+      // those rows first — same slug, different id — and nothing else.
+      sql`delete from products
+           where slug = any(${products.map((p) => p.slug)}::text[])
+             and not (id = any(${keepProducts}::text[]))`,
+      sql`insert into products
+             (id, slug, name, category, type, description, details, badges, price, active, position)
+           select id, slug, name, category, type, description, details, badges, price, true, position
+             from jsonb_to_recordset(${productRows}::jsonb) as t(
+               id text, slug text, name text, category product_category, type product_type,
+               description text, details text[], badges text[], price int, position int)
+           on conflict (id) do update set
+             slug = excluded.slug, name = excluded.name, category = excluded.category,
+             type = excluded.type, description = excluded.description,
+             details = excluded.details, badges = excluded.badges, price = excluded.price,
+             active = true, position = excluded.position`,
+      sql`insert into variants (id, product_id, colour, swatch, price, images, position)
+           select id, product_id, colour, swatch, price, images, position
+             from jsonb_to_recordset(${variantRows}::jsonb) as t(
+               id text, product_id text, colour text, swatch text, price int,
+               images text[], position int)
+           on conflict (id) do update set
+             product_id = excluded.product_id, colour = excluded.colour,
+             swatch = excluded.swatch, price = excluded.price, images = excluded.images,
+             position = excluded.position`,
+      sql`insert into skus (id, variant_id, size, in_stock, stock, position)
+           select id, variant_id, size, in_stock, stock, position
+             from jsonb_to_recordset(${skuRows}::jsonb) as t(
+               id text, variant_id text, size text, in_stock boolean, stock int, position int)
+           on conflict (id) do update set
+             variant_id = excluded.variant_id, size = excluded.size,
+             in_stock = excluded.in_stock, stock = excluded.stock,
+             position = excluded.position`,
+      // Delete removed rows last, deepest first. An empty keep-list means
+      // "keep nothing" — delete everything. Skipping the delete when the
+      // list is empty would silently turn "remove the last product" into a
+      // no-op.
+      sql`delete from skus where not (id = any(${keepSkus}::text[]))`,
+      sql`delete from variants where not (id = any(${keepVariants}::text[]))`,
+      sql`delete from products where not (id = any(${keepProducts}::text[]))`,
+    ]);
+  } catch (e) {
+    throw new Error(`Failed to save catalog: ${(e as Error).message}`);
   }
-
-  // Delete removed rows last, deepest first, so nothing is orphaned mid-write
-  // if a later step fails.
-  //
-  // An empty keep-list means "keep nothing" — delete everything. Skipping the
-  // delete when the list is empty would silently turn "remove the last
-  // product" into a no-op.
-  await deleteExcept(db, "skus", keepSkus);
-  await deleteExcept(db, "variants", keepVariants);
-  await deleteExcept(db, "products", keepProducts);
-}
-
-async function deleteExcept(
-  db: ReturnType<typeof supabaseAdmin>,
-  table: string,
-  keep: string[]
-) {
-  const query = db.from(table).delete();
-  const { error } = keep.length
-    ? // Ids are slugs, so quoting each one keeps a value containing a comma
-      // from being read as a list separator.
-      await query.not("id", "in", `(${keep.map((id) => `"${id}"`).join(",")})`)
-    : await query.neq("id", "");
-  if (error) throw new Error(`Failed to prune ${table}: ${error.message}`);
 }

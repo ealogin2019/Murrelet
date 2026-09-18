@@ -17,7 +17,6 @@
 //
 // A dated backup of the live catalog is written first, always.
 import { config } from "dotenv";
-import { createClient } from "@supabase/supabase-js";
 import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
 
@@ -88,16 +87,12 @@ async function main() {
   // lost by clearing them here -- these exact rows are about to be rewritten,
   // order_items.sku_id is `on delete set null`, and every past order carries
   // its own denormalised product name, colour, size and price.
-  const db = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const { db } = await import("../lib/db");
   const variantIds = live
     .filter((p) => wanted.includes(p.id))
     .flatMap((p) => p.variants.map((v) => v.id));
   if (variantIds.length) {
-    const { error } = await db.from("skus").delete().in("variant_id", variantIds);
-    if (error) throw new Error(`Failed to clear old skus: ${error.message}`);
+    await db()`delete from skus where variant_id = any(${variantIds}::text[])`;
     console.log(`
 Cleared old skus for ${variantIds.length} colourway(s).`);
   }

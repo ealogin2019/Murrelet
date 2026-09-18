@@ -21,11 +21,8 @@ async function main() {
     process.exit(2);
   }
   const { seedCatalog } = await import("../lib/catalog");
-  const { createClient } = await import("@supabase/supabase-js");
-  const db = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const { db } = await import("../lib/db");
+  const sql = db();
 
   for (const id of ids) {
     const p = seedCatalog.find((x) => x.id === id);
@@ -33,11 +30,9 @@ async function main() {
       console.error(`No "${id}" in seedCatalog.`);
       process.exit(1);
     }
-    const { data: live } = await db
-      .from("products")
-      .select("id,name,slug,price,description,details")
-      .eq("id", id)
-      .maybeSingle();
+    const [live] = (await sql`
+      select id, name, slug, price, description, details from products where id = ${id}
+    `) as { id: string; name: string; slug: string; price: number; description: string; details: string[] }[];
     if (!live) {
       console.error(`"${id}" is not live -- graft it first.`);
       process.exit(1);
@@ -49,12 +44,15 @@ async function main() {
     console.log(`   description  ${live.description.slice(0, 50)}… -> ${p.description.slice(0, 50)}…`);
     console.log(`   details      ${live.details.length} lines -> ${p.details.length} lines`);
     if (write) {
-      const { error } = await db
-        .from("products")
-        .update({ name: p.name, slug: p.slug, price: p.price, description: p.description, details: p.details })
-        .eq("id", id);
-      if (error) {
-        console.error(`   FAILED: ${error.message}`);
+      try {
+        await sql`
+          update products
+             set name = ${p.name}, slug = ${p.slug}, price = ${p.price},
+                 description = ${p.description}, details = ${p.details}::text[]
+           where id = ${id}
+        `;
+      } catch (e) {
+        console.error(`   FAILED: ${(e as Error).message}`);
         process.exit(1);
       }
       console.log("   written");

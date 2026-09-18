@@ -3,11 +3,7 @@
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
-import { createClient } from "@supabase/supabase-js";
-
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const db = createClient(url, key);
+import { db } from "../lib/db";
 
 // Reverse the latin1 misdecode: each mojibake sequence's code points are the
 // UTF-8 bytes of the intended character.
@@ -39,10 +35,11 @@ function demojibake(s: string): string {
 
 async function main() {
   const write = process.argv.includes("--write");
-  const { data, error } = await db.from("products").select("id,name,description,details");
-  if (error) throw error;
+  const data = (await db()`select id, name, description, details from products`) as {
+    id: string; name: string; description: string; details: string[];
+  }[];
 
-  for (const p of data!) {
+  for (const p of data) {
     const desc = demojibake(p.description ?? "");
     const details = (p.details ?? []).map(demojibake);
     const changed =
@@ -52,11 +49,7 @@ async function main() {
     console.log(`\n${p.name} (${p.id})`);
     if (desc !== p.description) console.log(`  desc: ${p.description}\n     -> ${desc}`);
     if (write) {
-      const { error: e2 } = await db
-        .from("products")
-        .update({ description: desc, details })
-        .eq("id", p.id);
-      if (e2) throw e2;
+      await db()`update products set description = ${desc}, details = ${details}::text[] where id = ${p.id}`;
       console.log("  updated ✔");
     }
   }

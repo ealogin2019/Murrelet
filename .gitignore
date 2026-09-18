@@ -23,3 +23,4 @@ email-preview.html
 # Operational safety net, not source — they hold whatever was live at the
 # time and would go stale in the repository.
 backups/
+.tmp/

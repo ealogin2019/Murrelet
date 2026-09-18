@@ -7,9 +7,9 @@
 // webhook payload — means the record of what you sold depends on a request
 // you don't control arriving intact.
 //
-// Every function here uses the service role and must only run server-side.
+// Every function here must only run server-side.
 
-import { supabaseAdmin } from "./supabase";
+import { db, Sql } from "./db";
 
 export type OrderLine = {
   skuId: string;
@@ -68,26 +68,14 @@ export async function createPendingOrder(
   lines: OrderLine[],
   subtotalPence: number
 ): Promise<{ id: string; orderNumber: string }> {
-  const db = supabaseAdmin();
+  const sql = db();
   const orderNumber = generateOrderNumber();
-
-  const { data, error } = await db
-    .from("orders")
-    .insert({
-      order_number: orderNumber,
-      status: "pending",
-      subtotal_pence: subtotalPence,
-      shipping_pence: 0,
-      total_pence: null,
-    })
-    .select("id")
-    .single();
-
-  if (error || !data) throw new Error(`Failed to create order: ${error?.message}`);
-
-  const { error: itemsError } = await db.from("order_items").insert(
+  // The id is minted here so the order and its lines can go in one
+  // transaction: a headless order with no lines is worse than no order.
+  const id = crypto.randomUUID();
+  const items = JSON.stringify(
     lines.map((l) => ({
-      order_id: data.id,
+      order_id: id,
       sku_id: l.skuId,
       product_name: l.productName,
       colour: l.colour,
@@ -98,22 +86,30 @@ export async function createPendingOrder(
     }))
   );
 
-  if (itemsError) {
-    // A headless order with no lines is worse than no order, and it would
-    // still occupy the session's unique index. Roll it back.
-    await db.from("orders").delete().eq("id", data.id);
-    throw new Error(`Failed to create order items: ${itemsError.message}`);
+  try {
+    await sql.transaction([
+      sql`insert into orders (id, order_number, status, subtotal_pence, shipping_pence, total_pence)
+           values (${id}, ${orderNumber}, 'pending', ${subtotalPence}, 0, null)`,
+      sql`insert into order_items
+             (order_id, sku_id, product_name, colour, size, unit_price_pence, quantity, image_url)
+           select order_id, sku_id, product_name, colour, size, unit_price_pence, quantity, image_url
+             from jsonb_to_recordset(${items}::jsonb) as t(
+               order_id uuid, sku_id text, product_name text, colour text, size text,
+               unit_price_pence int, quantity int, image_url text)`,
+    ]);
+  } catch (e) {
+    throw new Error(`Failed to create order: ${(e as Error).message}`);
   }
 
-  return { id: data.id, orderNumber };
+  return { id, orderNumber };
 }
 
 export async function attachStripeSession(orderId: string, sessionId: string) {
-  const { error } = await supabaseAdmin()
-    .from("orders")
-    .update({ stripe_session_id: sessionId })
-    .eq("id", orderId);
-  if (error) throw new Error(`Failed to attach session: ${error.message}`);
+  try {
+    await db()`update orders set stripe_session_id = ${sessionId} where id = ${orderId}`;
+  } catch (e) {
+    throw new Error(`Failed to attach session: ${(e as Error).message}`);
+  }
 }
 
 /**
@@ -132,23 +128,24 @@ export async function markOrderPaid(
     shippingAddress: unknown;
   }
 ): Promise<{ updated: boolean; orderNumber: string | null; orderId: string | null }> {
-  const { data, error } = await supabaseAdmin()
-    .from("orders")
-    .update({
-      status: "paid",
-      email: details.email,
-      customer_name: details.customerName,
-      stripe_payment_intent: details.paymentIntent,
-      shipping_pence: details.shippingPence,
-      total_pence: details.totalPence,
-      shipping_address: details.shippingAddress,
-    })
-    .eq("stripe_session_id", sessionId)
-    .eq("status", "pending")
-    .select("id,order_number");
-
-  if (error) throw new Error(`Failed to mark order paid: ${error.message}`);
-  const row = data?.[0];
+  let data: { id: string; order_number: string }[];
+  try {
+    data = (await db()`
+      update orders set
+        status = 'paid',
+        email = ${details.email},
+        customer_name = ${details.customerName},
+        stripe_payment_intent = ${details.paymentIntent},
+        shipping_pence = ${details.shippingPence},
+        total_pence = ${details.totalPence},
+        shipping_address = ${JSON.stringify(details.shippingAddress ?? null)}::jsonb
+      where stripe_session_id = ${sessionId} and status = 'pending'
+      returning id, order_number
+    `) as { id: string; order_number: string }[];
+  } catch (e) {
+    throw new Error(`Failed to mark order paid: ${(e as Error).message}`);
+  }
+  const row = data[0];
   return {
     updated: Boolean(row),
     orderNumber: row?.order_number ?? null,
@@ -156,11 +153,27 @@ export async function markOrderPaid(
   };
 }
 
-const ORDER_SELECT =
-  "id,order_number,email,customer_name,status,subtotal_pence,shipping_pence,total_pence,created_at,shipping_address," +
-  "carrier,tracking_number,tracking_url,label_path,sendcloud_parcel_id,carrier_cost_pence," +
-  "label_created_at,shipped_at,delivered_at," +
-  "order_items(sku_id,product_name,colour,size,unit_price_pence,quantity,image_url)";
+// One order per row, its lines nested as JSON. `where` is a fragment built
+// by the caller with the same tagged template, so it stays parameterised.
+async function selectOrders(where: ReturnType<Sql>, limit: number): Promise<any[]> {
+  return (await db()`
+    select o.id, o.order_number, o.email, o.customer_name, o.status, o.subtotal_pence,
+           o.shipping_pence, o.total_pence, o.created_at, o.shipping_address,
+           o.carrier, o.tracking_number, o.tracking_url, o.label_path, o.sendcloud_parcel_id,
+           o.carrier_cost_pence, o.label_created_at, o.shipped_at, o.delivered_at,
+           coalesce((
+             select jsonb_agg(jsonb_build_object(
+               'sku_id', i.sku_id, 'product_name', i.product_name, 'colour', i.colour,
+               'size', i.size, 'unit_price_pence', i.unit_price_pence,
+               'quantity', i.quantity, 'image_url', i.image_url))
+             from order_items i where i.order_id = o.id
+           ), '[]'::jsonb) as order_items
+    from orders o
+    where ${where}
+    order by o.created_at desc
+    limit ${limit}
+  `) as any[];
+}
 
 function toOrder(row: any): Order {
   return {
@@ -172,7 +185,9 @@ function toOrder(row: any): Order {
     subtotalPence: row.subtotal_pence,
     shippingPence: row.shipping_pence,
     totalPence: row.total_pence,
-    createdAt: row.created_at,
+    // The driver hands timestamps back as Date; the app has always passed
+    // ISO strings around.
+    createdAt: new Date(row.created_at).toISOString(),
     shippingAddress: row.shipping_address ?? null,
     shipment: {
       carrier: row.carrier ?? null,
@@ -181,9 +196,9 @@ function toOrder(row: any): Order {
       labelPath: row.label_path ?? null,
       sendcloudParcelId: row.sendcloud_parcel_id ?? null,
       carrierCostPence: row.carrier_cost_pence ?? null,
-      labelCreatedAt: row.label_created_at ?? null,
-      shippedAt: row.shipped_at ?? null,
-      deliveredAt: row.delivered_at ?? null,
+      labelCreatedAt: iso(row.label_created_at),
+      shippedAt: iso(row.shipped_at),
+      deliveredAt: iso(row.delivered_at),
     },
     items: (row.order_items ?? []).map((i: any) => ({
       skuId: i.sku_id,
@@ -197,47 +212,40 @@ function toOrder(row: any): Order {
   };
 }
 
+function iso(v: unknown): string | null {
+  return v == null ? null : new Date(v as string | Date).toISOString();
+}
+
+async function findOrder(where: ReturnType<Sql>): Promise<Order | null> {
+  try {
+    const rows = await selectOrders(where, 1);
+    return rows[0] ? toOrder(rows[0]) : null;
+  } catch (e) {
+    throw new Error(`Failed to load order: ${(e as Error).message}`);
+  }
+}
+
 export async function getOrderBySession(sessionId: string): Promise<Order | null> {
-  const { data, error } = await supabaseAdmin()
-    .from("orders")
-    .select(ORDER_SELECT)
-    .eq("stripe_session_id", sessionId)
-    .maybeSingle();
-  if (error) throw new Error(`Failed to load order: ${error.message}`);
-  return data ? toOrder(data) : null;
+  return findOrder(db()`o.stripe_session_id = ${sessionId}`);
 }
 
 export async function getOrderById(id: string): Promise<Order | null> {
-  const { data, error } = await supabaseAdmin()
-    .from("orders")
-    .select(ORDER_SELECT)
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw new Error(`Failed to load order: ${error.message}`);
-  return data ? toOrder(data) : null;
+  return findOrder(db()`o.id = ${id}::uuid`);
 }
 
 export async function getOrderByParcel(parcelId: number): Promise<Order | null> {
-  const { data, error } = await supabaseAdmin()
-    .from("orders")
-    .select(ORDER_SELECT)
-    .eq("sendcloud_parcel_id", parcelId)
-    .maybeSingle();
-  if (error) throw new Error(`Failed to load order: ${error.message}`);
-  return data ? toOrder(data) : null;
+  return findOrder(db()`o.sendcloud_parcel_id = ${parcelId}`);
 }
 
 /** Everything that has been paid for, newest first. Pending rows are
  *  abandoned checkouts and are not the admin's business. */
 export async function listOrders(limit = 200): Promise<Order[]> {
-  const { data, error } = await supabaseAdmin()
-    .from("orders")
-    .select(ORDER_SELECT)
-    .neq("status", "pending")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (error) throw new Error(`Failed to list orders: ${error.message}`);
-  return (data ?? []).map(toOrder);
+  try {
+    const rows = await selectOrders(db()`o.status <> 'pending'`, limit);
+    return rows.map(toOrder);
+  } catch (e) {
+    throw new Error(`Failed to list orders: ${(e as Error).message}`);
+  }
 }
 
 /** Records a label. The status does NOT change: a label is not a shipment. */
@@ -252,19 +260,21 @@ export async function saveShipment(
     carrierCostPence: number | null;
   }
 ) {
-  const { error } = await supabaseAdmin()
-    .from("orders")
-    .update({
-      carrier: s.carrier,
-      tracking_number: s.trackingNumber,
-      tracking_url: s.trackingUrl,
-      label_path: s.labelPath,
-      sendcloud_parcel_id: s.sendcloudParcelId,
-      carrier_cost_pence: s.carrierCostPence,
-      label_created_at: new Date().toISOString(),
-    })
-    .eq("id", orderId);
-  if (error) throw new Error(`Failed to save shipment: ${error.message}`);
+  try {
+    await db()`
+      update orders set
+        carrier = ${s.carrier},
+        tracking_number = ${s.trackingNumber},
+        tracking_url = ${s.trackingUrl},
+        label_path = ${s.labelPath},
+        sendcloud_parcel_id = ${s.sendcloudParcelId},
+        carrier_cost_pence = ${s.carrierCostPence},
+        label_created_at = now()
+      where id = ${orderId}::uuid
+    `;
+  } catch (e) {
+    throw new Error(`Failed to save shipment: ${(e as Error).message}`);
+  }
 }
 
 /**
@@ -273,25 +283,29 @@ export async function saveShipment(
  * between them, not two.
  */
 export async function markOrderShipped(orderId: string): Promise<boolean> {
-  const { data, error } = await supabaseAdmin()
-    .from("orders")
-    .update({ status: "shipped", shipped_at: new Date().toISOString() })
-    .eq("id", orderId)
-    .eq("status", "paid")
-    .select("id");
-  if (error) throw new Error(`Failed to mark shipped: ${error.message}`);
-  return Boolean(data?.length);
+  try {
+    const rows = await db()`
+      update orders set status = 'shipped', shipped_at = now()
+      where id = ${orderId}::uuid and status = 'paid'
+      returning id
+    `;
+    return rows.length > 0;
+  } catch (e) {
+    throw new Error(`Failed to mark shipped: ${(e as Error).message}`);
+  }
 }
 
 export async function markOrderDelivered(orderId: string): Promise<boolean> {
-  const { data, error } = await supabaseAdmin()
-    .from("orders")
-    .update({ status: "delivered", delivered_at: new Date().toISOString() })
-    .eq("id", orderId)
-    .in("status", ["paid", "shipped"])
-    .select("id");
-  if (error) throw new Error(`Failed to mark delivered: ${error.message}`);
-  return Boolean(data?.length);
+  try {
+    const rows = await db()`
+      update orders set status = 'delivered', delivered_at = now()
+      where id = ${orderId}::uuid and status in ('paid', 'shipped')
+      returning id
+    `;
+    return rows.length > 0;
+  } catch (e) {
+    throw new Error(`Failed to mark delivered: ${(e as Error).message}`);
+  }
 }
 
 /**
@@ -319,13 +333,14 @@ export function garmentTypeFromSku(skuId: string | null): string | null {
 export async function decrementStockForOrder(
   orderId: string
 ): Promise<{ skuId: string; remaining: number; sold: number }[]> {
-  const { data, error } = await supabaseAdmin().rpc("decrement_stock_for_order", {
-    p_order_id: orderId,
-  });
+  let data: any[];
+  try {
+    data = await db()`select * from decrement_stock_for_order(${orderId}::uuid)`;
+  } catch (e) {
+    throw new Error(`Failed to decrement stock: ${(e as Error).message}`);
+  }
 
-  if (error) throw new Error(`Failed to decrement stock: ${error.message}`);
-
-  return (data ?? []).map((r: any) => ({
+  return data.map((r: any) => ({
     skuId: r.sku_id,
     remaining: r.remaining,
     sold: r.sold,

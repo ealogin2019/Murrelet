@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 import { getCatalog } from "@/lib/catalog-store";
 import { SITE_URL } from "@/lib/site";
 
-// Every Supabase read now goes through a no-store fetch (see lib/supabase.ts
-// for why), which is real "dynamic server usage" as far as Next's static
-// export is concerned — this route fetches the catalog, so it can't be
-// prerendered at build time any more. Generate it per-request instead.
+// Every database read goes through a no-store fetch (see lib/db.ts for why),
+// which is real "dynamic server usage" as far as Next's static export is
+// concerned — this route fetches the catalog, so it can't be prerendered at
+// build time. Generate it per-request instead.
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

@@ -61,20 +61,25 @@ const FIXTURE: Order = {
 };
 
 async function realOrder(): Promise<Order | null> {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null;
+  if (!process.env.DATABASE_URL) return null;
   try {
-    const { supabaseAdmin } = await import("../lib/supabase");
-    const { data } = await supabaseAdmin()
-      .from("orders")
-      .select(
-        "id,order_number,email,customer_name,status,subtotal_pence,shipping_pence,total_pence," +
-          "created_at,shipping_address,order_items(sku_id,product_name,colour,size," +
-          "unit_price_pence,quantity,image_url)"
-      )
-      .order("created_at", { ascending: false })
-      .limit(1);
+    const { db } = await import("../lib/db");
+    const data = await db()`
+      select o.id, o.order_number, o.email, o.customer_name, o.status, o.subtotal_pence,
+             o.shipping_pence, o.total_pence, o.created_at, o.shipping_address,
+             coalesce((
+               select jsonb_agg(jsonb_build_object(
+                 'sku_id', i.sku_id, 'product_name', i.product_name, 'colour', i.colour,
+                 'size', i.size, 'unit_price_pence', i.unit_price_pence,
+                 'quantity', i.quantity, 'image_url', i.image_url))
+               from order_items i where i.order_id = o.id
+             ), '[]'::jsonb) as order_items
+      from orders o
+      order by o.created_at desc
+      limit 1
+    `;
 
-    const row = data?.[0] as any;
+    const row = data[0] as any;
     if (!row?.order_items?.length) return null;
 
     return {
@@ -91,7 +96,7 @@ async function realOrder(): Promise<Order | null> {
       subtotalPence: row.subtotal_pence,
       shippingPence: row.shipping_pence,
       totalPence: row.total_pence,
-      createdAt: row.created_at,
+      createdAt: new Date(row.created_at).toISOString(),
       shippingAddress: row.shipping_address ?? null,
       items: row.order_items.map((i: any) => ({
         skuId: i.sku_id,
