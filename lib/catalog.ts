@@ -648,12 +648,12 @@ const SMALL_HOODIE_COLOURS: {
   shots: number;
   folder?: string;
 }[] = [
-  { colour: "Black", swatch: "#1D1D1D", shots: 3 },
-  { colour: "Graphite", swatch: "#413F44", shots: 3, folder: "grey" },
-  { colour: "Light Grey", swatch: "#C5C6CA", shots: 3, folder: "light-grey" },
-  { colour: "Navy", swatch: "#1B2138", shots: 3, folder: "navy-blue" },
-  { colour: "Sky Blue", swatch: "#C1D6EE", shots: 3, folder: "light-blue" },
-  { colour: "White", swatch: "#F5F5F7", shots: 3 },
+  { colour: "Black", swatch: "#1D1D1D", shots: 5 },
+  { colour: "Graphite", swatch: "#413F44", shots: 5, folder: "grey" },
+  { colour: "Light Grey", swatch: "#C5C6CA", shots: 5, folder: "light-grey" },
+  { colour: "Navy", swatch: "#1B2138", shots: 5, folder: "navy-blue" },
+  { colour: "Sky Blue", swatch: "#C1D6EE", shots: 5, folder: "light-blue" },
+  { colour: "White", swatch: "#F5F5F7", shots: 5 },
 ];
 
 const HOODIE_DETAILS = [
