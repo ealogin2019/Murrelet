@@ -26,7 +26,7 @@ export default function Footer() {
 
         <div className="footer-legal">
           <p>&copy; {new Date().getFullYear()} Murrelet. All rights reserved.</p>
-          <p>Free standard delivery over £100 · Returns accepted within 14 days.</p>
+          <p>Free UK standard delivery over £70 · Returns accepted within 14 days.</p>
         </div>
       </div>
     </footer>

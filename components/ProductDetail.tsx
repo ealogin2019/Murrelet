@@ -301,7 +301,7 @@ export default function ProductDetail({
           </button>
 
           <p className="product-delivery eyebrow">
-            Free standard delivery over £100 &amp; returns within 14 days
+            Free UK standard delivery over £70 &amp; returns within 14 days
           </p>
 
           <p className="product-desc">{body}</p>

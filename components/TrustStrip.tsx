@@ -2,7 +2,7 @@ const ITEMS = [
   {
     path: "M3 8.5h11.5l2.5 3.5v4h-14v-7.5Z M14.5 8.5V5.5h-11.5v10",
     label: "Free UK delivery",
-    detail: "On orders over £100",
+    detail: "On orders over £70",
   },
   {
     path: "M4 10a6 6 0 1 0 12 0 6 6 0 0 0-12 0Z M10 6.5v3.8l2.6 1.6",

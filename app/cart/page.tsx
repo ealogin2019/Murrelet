@@ -6,8 +6,8 @@ import { formatPrice } from "@/lib/format";
 
 // Pence. Must stay in step with app/api/checkout/route.ts, which is what
 // actually charges — this figure is only an estimate shown in the bag.
-const FREE_SHIPPING_THRESHOLD = 10000;
-const STANDARD_SHIPPING = 495;
+const FREE_SHIPPING_THRESHOLD = 7000;
+const STANDARD_SHIPPING = 395;
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, subtotal } = useCart();

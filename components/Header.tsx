@@ -215,7 +215,7 @@ export default function Header() {
 
         <div className="nav-panel-foot">
           <img src="/brand/logo-mark.png" alt="" aria-hidden="true" />
-          <p className="eyebrow">Free standard delivery over £100</p>
+          <p className="eyebrow">Free UK standard delivery over £70</p>
         </div>
       </nav>
     </>

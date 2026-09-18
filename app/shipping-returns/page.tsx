@@ -14,16 +14,20 @@ export default function ShippingReturnsPage() {
       <table className="info-table">
         <tbody>
           <tr>
-            <td>Standard delivery</td>
-            <td>£4.95 · 3–5 business days</td>
+            <td>UK standard delivery</td>
+            <td>£3.95 · 2–3 business days</td>
           </tr>
           <tr>
-            <td>Express delivery</td>
-            <td>£9.95 · 1–2 business days</td>
+            <td>UK express delivery</td>
+            <td>£5.95 · 1–2 business days</td>
           </tr>
           <tr>
-            <td>Orders over £100</td>
+            <td>UK orders over £70</td>
             <td>Free standard delivery</td>
+          </tr>
+          <tr>
+            <td>Ireland</td>
+            <td>£7.95 · 3–5 business days</td>
           </tr>
         </tbody>
       </table>

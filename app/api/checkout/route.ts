@@ -105,35 +105,50 @@ export async function POST(req: NextRequest) {
 
     const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
-    // Flat-rate UK shipping. Free over £100, otherwise £4.95 standard plus an
-    // optional £9.95 express option. Thresholds in pence.
-    const FREE_SHIPPING_THRESHOLD = 10000;
+    // Flat-rate shipping, in pence. UK: free standard over £70, otherwise
+    // £3.95 standard or £5.95 express. Ireland: £7.95 flat. Stripe Checkout
+    // cannot vary options by the address the customer types, so Ireland is a
+    // separately-labelled option the customer picks. Mirror any change on
+    // app/cart/page.tsx, app/shipping-returns, Footer, Header, TrustStrip,
+    // ProductDetail.
+    const FREE_SHIPPING_THRESHOLD = 7000;
     const shipping_options: Stripe.Checkout.SessionCreateParams.ShippingOption[] = [
       {
         shipping_rate_data: {
           type: "fixed_amount",
           fixed_amount: {
-            amount: subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 495,
+            amount: subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 395,
             currency: "gbp",
           },
           display_name:
             subtotal >= FREE_SHIPPING_THRESHOLD
-              ? "Free standard delivery"
-              : "Standard delivery (3–5 days)",
+              ? "UK standard delivery — free"
+              : "UK standard delivery (2–3 days)",
           delivery_estimate: {
-            minimum: { unit: "business_day", value: 3 },
-            maximum: { unit: "business_day", value: 5 },
+            minimum: { unit: "business_day", value: 2 },
+            maximum: { unit: "business_day", value: 3 },
           },
         },
       },
       {
         shipping_rate_data: {
           type: "fixed_amount",
-          fixed_amount: { amount: 995, currency: "gbp" },
-          display_name: "Express delivery (1–2 days)",
+          fixed_amount: { amount: 595, currency: "gbp" },
+          display_name: "UK express delivery (1–2 days)",
           delivery_estimate: {
             minimum: { unit: "business_day", value: 1 },
             maximum: { unit: "business_day", value: 2 },
+          },
+        },
+      },
+      {
+        shipping_rate_data: {
+          type: "fixed_amount",
+          fixed_amount: { amount: 795, currency: "gbp" },
+          display_name: "Ireland delivery (3–5 days)",
+          delivery_estimate: {
+            minimum: { unit: "business_day", value: 3 },
+            maximum: { unit: "business_day", value: 5 },
           },
         },
       },
