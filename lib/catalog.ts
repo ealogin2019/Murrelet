@@ -712,6 +712,127 @@ const smallTextLogoHoodie = smallHoodie(
   "The crest and wordmark, small at the left chest."
 );
 
+/** Colourways of the sweatshirts. The AWDis JH030 is dyed to the same six
+ *  standards as the hoodie and measures within tolerance of it -- the widest
+ *  gap is Sky Blue at 7.4, the rest under 6 -- so the colour NAMES and their
+ *  issued numbers carry straight across. The hexes do not: each is measured
+ *  off this garment's own flat lay, 60th to 88th luminance percentile of the
+ *  centre half of the frame, because the chip has to match the cloth in the
+ *  photograph next to it.
+ *
+ *  Two lists, because Large.Text was shot separately from the two Small
+ *  treatments and reads a little lighter throughout -- Graphite 6.6 from the
+ *  hoodie against Small's 3.5. The Small pair share one list for the reason
+ *  the Small hoodies do: they are the same six garments, photographed once. */
+const LARGE_TEXT_SWEATSHIRT_COLOURS: {
+  colour: string;
+  swatch: string;
+  shots: number;
+  folder?: string;
+}[] = [
+  { colour: "Black", swatch: "#1E1E1E", shots: 5 },
+  { colour: "Graphite", swatch: "#4E4E50", shots: 5, folder: "grey" },
+  { colour: "Light Grey", swatch: "#CFD0D4", shots: 5, folder: "light-grey" },
+  { colour: "Navy", swatch: "#232B47", shots: 5, folder: "navy-blue" },
+  { colour: "Sky Blue", swatch: "#BEDEFD", shots: 5, folder: "light-blue" },
+  { colour: "White", swatch: "#F6F5FA", shots: 5 },
+];
+
+const SMALL_SWEATSHIRT_COLOURS: {
+  colour: string;
+  swatch: string;
+  shots: number;
+  folder?: string;
+}[] = [
+  { colour: "Black", swatch: "#1D1D1D", shots: 5 },
+  { colour: "Graphite", swatch: "#46474B", shots: 5, folder: "grey" },
+  { colour: "Light Grey", swatch: "#C6C9CE", shots: 5, folder: "light-grey" },
+  { colour: "Navy", swatch: "#1E2642", shots: 5, folder: "navy-blue" },
+  { colour: "Sky Blue", swatch: "#B4D7FB", shots: 5, folder: "light-blue" },
+  { colour: "White", swatch: "#F6F6FA", shots: 5 },
+];
+
+const SWEATSHIRT_DETAILS = [
+  "80% ringspun cotton, 20% polyester, 280 gsm",
+  "Regular fit — true to size; size up for an oversized look",
+  "Crew neck with ribbed collar, cuffs and hem; set-in sleeves",
+  "Machine wash at 30°C, inside out; do not tumble dry",
+  "Returns within 14 days — see Shipping & Returns",
+];
+
+const SWEATSHIRT_BODY =
+  " A 280 gsm cotton-rich sweat with a ribbed crew neck, cuffs and hem. "
+  + "Cotton-faced so the print sits cleanly, with polyester in the blend so it "
+  + "keeps its shape. Set-in sleeves and a regular fit with room to layer.";
+
+/**
+ * A sweatshirt.
+ *
+ * `missing` names the colours short of the usual five shots, so a folder that
+ * holds four files does not produce a product page with a broken fifth image.
+ * Small.Logo's white has no usable side shot.
+ */
+function sweatshirt(
+  id: "large-text-sweatshirt" | "small-logo-sweatshirt" | "small-text-logo-sweatshirt",
+  slug: string,
+  name: string,
+  treatment: TreatmentKey,
+  lead: string,
+  colours: { colour: string; swatch: string; shots: number; folder?: string }[],
+  missing: Record<string, number> = {}
+): Product {
+  return {
+    id,
+    slug,
+    name,
+    category: "men",
+    type: "sweatshirts",
+    description: lead + SWEATSHIRT_BODY,
+    details: SWEATSHIRT_DETAILS,
+    badges: ["NEW ARRIVAL"],
+    price: 3800,
+    variants: colours.map(({ colour, swatch, shots: n, folder }) => {
+      const dir = folder ?? colour.toLowerCase().replace(/\s+/g, "-");
+      return {
+        id: `${id}-${dir}`,
+        colour,
+        swatch,
+        price: null,
+        images: shots(id, dir, missing[dir] ?? n),
+        skus: skuRun("sweatshirts", treatment, colour),
+      };
+    }),
+  };
+}
+
+const largeTextSweatshirt = sweatshirt(
+  "large-text-sweatshirt",
+  "wordmark-sweatshirt",
+  "Wordmark Sweatshirt",
+  "large-text",
+  "The Murrelet wordmark across the chest.",
+  LARGE_TEXT_SWEATSHIRT_COLOURS
+);
+
+const smallLogoSweatshirt = sweatshirt(
+  "small-logo-sweatshirt",
+  "crest-sweatshirt",
+  "Crest Sweatshirt",
+  "small-logo",
+  "The Murrelet crest, small at the left chest.",
+  SMALL_SWEATSHIRT_COLOURS,
+  { white: 4 }
+);
+
+const smallTextLogoSweatshirt = sweatshirt(
+  "small-text-logo-sweatshirt",
+  "signature-sweatshirt",
+  "Signature Sweatshirt",
+  "small-text-logo",
+  "The crest and wordmark, small at the left chest.",
+  SMALL_SWEATSHIRT_COLOURS
+);
+
 export const seedCatalog: Product[] = [
   largeTextTee,
   smallTextLogoTee,
@@ -719,6 +840,9 @@ export const seedCatalog: Product[] = [
   largeTextHoodie,
   smallLogoHoodie,
   smallTextLogoHoodie,
+  largeTextSweatshirt,
+  smallLogoSweatshirt,
+  smallTextLogoSweatshirt,
   {
     id: "linen-shirt",
     slug: "custom-fit-linen-shirt",

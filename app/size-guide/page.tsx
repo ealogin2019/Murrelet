@@ -3,12 +3,15 @@ import InfoPage from "@/components/InfoPage";
 
 export const metadata: Metadata = {
   title: "Size Guide",
-  description: "Garment measurements for Murrelet tees and hoodies, size by size, with the chest each size is cut for.",
+  description: "Garment measurements for Murrelet tees, hoodies and sweatshirts, size by size, with the chest each size is cut for.",
 };
 
 // These are the garments' own spec sheets, not generic UK ranges: the tee
 // chart from the supplier, the hoodie chart supplied by the owner on
-// 2026-09-05. The same numbers drive the image engine's crest sizing, so the
+// 2026-09-05, the sweatshirt (AWDis JH030) from the official AWDis size guide
+// on 2026-09-25. The sweatshirt's to-fit chest column is AWDis's own size run,
+// the same one the hoodie above is cut to -- only the flat measurements
+// differ between the two bodies. The same numbers drive the image engine's crest sizing, so the
 // chart a customer reads and the garment in the photograph agree by
 // construction. Width is the garment laid flat, armpit to armpit, so a
 // customer can measure a tee they already own and match it.
@@ -31,6 +34,17 @@ const HOODIE = [
   { size: "L", chest: "44", width: 61, length: 73 },
   { size: "XL", chest: "48", width: 65, length: 76 },
   { size: "XXL", chest: "52", width: 69, length: 79 },
+];
+
+// XS-2XL here, matching what is on sale. AWDis make the JH030 up to 5XL;
+// those sizes are not stocked, so they are not charted.
+const SWEATSHIRT = [
+  { size: "XS", chest: "34", width: 50, length: 67.5 },
+  { size: "S", chest: "36", width: 52, length: 69 },
+  { size: "M", chest: "40", width: 56, length: 72 },
+  { size: "L", chest: "44", width: 60, length: 75 },
+  { size: "XL", chest: "48", width: 64, length: 78 },
+  { size: "XXL", chest: "52", width: 68, length: 81 },
 ];
 
 function Chart({ rows }: { rows: typeof TEE }) {
@@ -64,7 +78,7 @@ export default function SizeGuidePage() {
       <p>
         Two ways to choose. <strong>To fit chest</strong> is your body measurement,
         taken around the fullest part of the chest. <strong>Garment width</strong> is
-        the piece itself laid flat, armpit to armpit &mdash; measure a tee or hoodie
+        the piece itself laid flat, armpit to armpit &mdash; measure something
         you already like the fit of and match it here. Tolerance is about 2&nbsp;cm
         either way.
       </p>
@@ -76,6 +90,10 @@ export default function SizeGuidePage() {
       <h2>Hoodies</h2>
       <p>Regular fit with room to layer. True to size; size up for an oversized look.</p>
       <Chart rows={HOODIE} />
+
+      <h2>Sweatshirts</h2>
+      <p>Regular fit with room to layer. True to size; size up for an oversized look.</p>
+      <Chart rows={SWEATSHIRT} />
 
       <h2>How to measure</h2>
       <p>
