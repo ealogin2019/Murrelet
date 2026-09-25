@@ -4,7 +4,6 @@
 // both need to agree on -- what a label changes and what it doesn't, when the
 // dispatch email goes, who may send it -- lives here once.
 
-import { supabaseAdmin } from "./supabase";
 import {
   Order,
   garmentTypeFromSku,
@@ -14,10 +13,11 @@ import {
   saveShipment,
 } from "./orders";
 import { announce, fetchLabel, parcelWeightKg, pickOption, sendcloudConfig, senderAddress } from "./sendcloud";
+import { putObject, signedUrl } from "./r2";
 import { sendEmail } from "./email";
 import { orderShipped } from "./emails/order-shipped";
 
-const LABEL_BUCKET = "shipping-labels";
+const LABEL_PREFIX = "labels/"; // in the PRIVATE R2 bucket, which has no public URL
 const LABEL_URL_TTL = 60 * 60; // an hour; re-signed on every admin load
 
 export class ShippingError extends Error {
@@ -98,14 +98,11 @@ export async function createLabel(orderId: string): Promise<Order> {
   if (announced.labelLink) {
     try {
       const bytes = await fetchLabel(cfg, announced.labelLink);
-      const path = `${order.orderNumber}.pdf`;
-      const { error } = await supabaseAdmin()
-        .storage.from(LABEL_BUCKET)
-        .upload(path, bytes, { contentType: "application/pdf", upsert: true });
-      if (error) console.error(`[shipping] label upload failed for ${order.orderNumber}:`, error.message);
-      else labelPath = path;
+      const path = `${LABEL_PREFIX}${order.orderNumber}.pdf`;
+      await putObject(path, bytes, "application/pdf", true);
+      labelPath = path;
     } catch (e) {
-      console.error(`[shipping] label fetch failed for ${order.orderNumber}:`, e);
+      console.error(`[shipping] label fetch/upload failed for ${order.orderNumber}:`, e);
     }
   }
 
@@ -127,10 +124,12 @@ export async function createLabel(orderId: string): Promise<Order> {
 /** A short-lived URL for the stored label PDF, or null if there is none. */
 export async function labelUrl(order: Order): Promise<string | null> {
   if (!order.shipment.labelPath) return null;
-  const { data } = await supabaseAdmin()
-    .storage.from(LABEL_BUCKET)
-    .createSignedUrl(order.shipment.labelPath, LABEL_URL_TTL);
-  return data?.signedUrl ?? null;
+  try {
+    return await signedUrl(order.shipment.labelPath, LABEL_URL_TTL);
+  } catch (e) {
+    console.error(`[shipping] could not sign label URL for ${order.orderNumber}:`, e);
+    return null;
+  }
 }
 
 /**
