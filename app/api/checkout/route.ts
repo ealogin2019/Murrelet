@@ -117,6 +117,9 @@ export async function POST(req: NextRequest) {
     const shipping_options: Stripe.Checkout.SessionCreateParams.ShippingOption[] = [
       {
         shipping_rate_data: {
+          // Read back by the Stripe webhook onto orders.shipping_service, which
+          // decides the carrier service the label buys (lib/sendcloud.ts).
+          metadata: { service: "standard" },
           type: "fixed_amount",
           fixed_amount: {
             amount: subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 395,
@@ -134,6 +137,9 @@ export async function POST(req: NextRequest) {
       },
       {
         shipping_rate_data: {
+          // Read back by the Stripe webhook onto orders.shipping_service, which
+          // decides the carrier service the label buys (lib/sendcloud.ts).
+          metadata: { service: "express" },
           type: "fixed_amount",
           fixed_amount: { amount: 595, currency: "gbp" },
           display_name: "UK express delivery (1–2 days)",
@@ -145,6 +151,9 @@ export async function POST(req: NextRequest) {
       },
       {
         shipping_rate_data: {
+          // Read back by the Stripe webhook onto orders.shipping_service, which
+          // decides the carrier service the label buys (lib/sendcloud.ts).
+          metadata: { service: "ireland" },
           type: "fixed_amount",
           fixed_amount: { amount: 995, currency: "gbp" },
           display_name: "Ireland delivery (3–5 days)",

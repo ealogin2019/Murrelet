@@ -90,9 +90,18 @@ export type ShipOption = { code: string; contractId?: number; carrier?: string; 
  * env-pinned one if it is usable. Quotes come back with the options, so the
  * carrier cost is known before the label is bought and gets stored with it.
  */
+/**
+ * What "express" buys: Royal Mail Tracked 24. The customer is charged £5.95
+ * for 1-2 days; the cheapest Tracked 24 parcel was £3.88 on 2026-09-26. Keyed
+ * on the code rather than on Sendcloud's delivery_deadline, which reports
+ * "best_effort" for every Royal Mail service, 24 and 48 alike.
+ */
+const EXPRESS_CODE = /:tracked_24\//;
+
 export async function pickOption(
   cfg: SendcloudConfig,
-  route: { fromCountry: string; fromPostal: string; toCountry: string; toPostal: string; weightKg: string }
+  route: { fromCountry: string; fromPostal: string; toCountry: string; toPostal: string; weightKg: string },
+  service: "standard" | "express" | "ireland" | null = null
 ): Promise<ShipOption> {
   if (cfg.testMode) return { code: "sendcloud:letter", pricePence: 0, carrier: "test" };
   const json = await api(cfg, "/shipping-options", {
@@ -139,6 +148,17 @@ export async function pickOption(
     carrier: o?.carrier?.name ?? o?.carrier?.code ?? undefined,
     pricePence: Number.isFinite(price(o)) ? Math.round(price(o) * 100) : null,
   });
+  // An express order must get an express service. If none is available the
+  // label is refused rather than quietly downgraded -- that downgrade is the
+  // exact failure this exists to stop.
+  if (service === "express") {
+    const fast = usable.filter((o) => EXPRESS_CODE.test(o.code));
+    if (!fast.length) {
+      throw new Error("Sendcloud has no Tracked 24 option for this route; the order was paid as express.");
+    }
+    fast.sort((a, b) => price(a) - price(b));
+    return toOpt(fast[0]);
+  }
   if (cfg.optionCode) {
     const pinned = usable.find((o) => o.code === cfg.optionCode);
     if (pinned) return toOpt(pinned);

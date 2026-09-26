@@ -49,6 +49,21 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true, skipped: "unpaid" });
       }
 
+      // Which delivery was paid for. The event carries only the rate's id, so
+      // fetch it for the metadata the checkout put there. Done BEFORE the order
+      // is marked paid: if this throws, Stripe retries the whole event, whereas
+      // a failure after markOrderPaid would find the order already settled and
+      // skip it, leaving an express order with no service on it.
+      const rateId =
+        typeof session.shipping_cost?.shipping_rate === "string"
+          ? session.shipping_cost.shipping_rate
+          : session.shipping_cost?.shipping_rate?.id ?? null;
+      const service = rateId
+        ? (await stripe.shippingRates.retrieve(rateId)).metadata?.service ?? null
+        : null;
+      const shippingService =
+        service === "standard" || service === "express" || service === "ireland" ? service : null;
+
       const result = await markOrderPaid(session.id, {
         email: session.customer_details?.email ?? null,
         // The label needs a name on it; Stripe collected one with the address.
@@ -58,6 +73,7 @@ export async function POST(req: NextRequest) {
             ? session.payment_intent
             : session.payment_intent?.id ?? null,
         shippingPence: session.total_details?.amount_shipping ?? 0,
+        shippingService,
         totalPence: session.amount_total ?? 0,
         shippingAddress:
           session.customer_details?.address ?? null,

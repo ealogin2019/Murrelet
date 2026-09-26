@@ -39,6 +39,7 @@ async function main() {
     status: "paid",
     subtotalPence: 7000,
     shippingPence: 495,
+    shippingService: null,
     totalPence: 7495,
     createdAt: new Date().toISOString(),
     shippingAddress: {

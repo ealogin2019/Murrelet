@@ -155,7 +155,14 @@ export default function OrdersPanel({
                         ))}
                       </ul>
                       <p className="admin-order-totals">
-                        Delivery {o.shippingPence === 0 ? "free" : formatPrice(o.shippingPence)}
+                        {o.shippingService === "express" ? (
+                          <strong>EXPRESS · Tracked 24</strong>
+                        ) : o.shippingService === "ireland" ? (
+                          "Ireland"
+                        ) : (
+                          "Standard"
+                        )}{" "}
+                        · Delivery {o.shippingPence === 0 ? "free" : formatPrice(o.shippingPence)}
                         {s.carrierCostPence != null && <> · carrier cost {formatPrice(s.carrierCostPence)}</>}
                       </p>
                     </section>

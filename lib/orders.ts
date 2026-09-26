@@ -33,6 +33,8 @@ export type Shipment = {
   deliveredAt: string | null;
 };
 
+export type ShippingService = "standard" | "express" | "ireland";
+
 export type Order = {
   id: string;
   orderNumber: string;
@@ -42,6 +44,8 @@ export type Order = {
   shipment: Shipment;
   subtotalPence: number;
   shippingPence: number;
+  /** What the customer paid for. Null on orders placed before it was kept. */
+  shippingService: ShippingService | null;
   totalPence: number | null;
   createdAt: string;
   /** Whatever Stripe collected at checkout. Shape is Stripe's, not ours. */
@@ -124,6 +128,7 @@ export async function markOrderPaid(
     customerName: string | null;
     paymentIntent: string | null;
     shippingPence: number;
+    shippingService: ShippingService | null;
     totalPence: number;
     shippingAddress: unknown;
   }
@@ -137,6 +142,7 @@ export async function markOrderPaid(
         customer_name = ${details.customerName},
         stripe_payment_intent = ${details.paymentIntent},
         shipping_pence = ${details.shippingPence},
+        shipping_service = ${details.shippingService},
         total_pence = ${details.totalPence},
         shipping_address = ${JSON.stringify(details.shippingAddress ?? null)}::jsonb
       where stripe_session_id = ${sessionId} and status = 'pending'
@@ -158,7 +164,7 @@ export async function markOrderPaid(
 async function selectOrders(where: ReturnType<Sql>, limit: number): Promise<any[]> {
   return (await db()`
     select o.id, o.order_number, o.email, o.customer_name, o.status, o.subtotal_pence,
-           o.shipping_pence, o.total_pence, o.created_at, o.shipping_address,
+           o.shipping_pence, o.shipping_service, o.total_pence, o.created_at, o.shipping_address,
            o.carrier, o.tracking_number, o.tracking_url, o.label_path, o.sendcloud_parcel_id,
            o.carrier_cost_pence, o.label_created_at, o.shipped_at, o.delivered_at,
            coalesce((
@@ -184,6 +190,7 @@ function toOrder(row: any): Order {
     status: row.status,
     subtotalPence: row.subtotal_pence,
     shippingPence: row.shipping_pence,
+    shippingService: row.shipping_service ?? null,
     totalPence: row.total_pence,
     // The driver hands timestamps back as Date; the app has always passed
     // ISO strings around.

@@ -64,9 +64,15 @@ export async function createLabel(orderId: string): Promise<Order> {
   const name = order.customerName?.trim();
   if (!name) throw new ShippingError("The order has no customer name for the label.");
 
-  const weightKg = parcelWeightKg(
-    order.items.map((i) => ({ productType: garmentTypeFromSku(i.skuId), quantity: i.quantity }))
-  );
+  // Test mode buys Sendcloud's free unstamped letter, which has a low weight
+  // limit: a real garment weight is rejected. Hyms found this the hard way and
+  // pinned 100 g; the same here. Only in test mode -- a real label must carry
+  // the real weight or the carrier re-weighs it and bills the difference.
+  const weightKg = cfg.testMode
+    ? "0.100"
+    : parcelWeightKg(
+        order.items.map((i) => ({ productType: garmentTypeFromSku(i.skuId), quantity: i.quantity }))
+      );
   const from = await senderAddress(cfg);
   const option = await pickOption(cfg, {
     fromCountry: from.country_code || "GB",
@@ -74,7 +80,7 @@ export async function createLabel(orderId: string): Promise<Order> {
     toCountry: a.country,
     toPostal: a.postal_code,
     weightKg,
-  });
+  }, order.shippingService);
 
   const announced = await announce(cfg, {
     orderNumber: order.orderNumber,

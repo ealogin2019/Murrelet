@@ -28,6 +28,7 @@ const FIXTURE: Order = {
   status: "paid",
   subtotalPence: 12000,
   shippingPence: 495,
+  shippingService: null,
   totalPence: 12495,
   createdAt: new Date().toISOString(),
   shippingAddress: {
@@ -95,6 +96,7 @@ async function realOrder(): Promise<Order | null> {
       status: row.status,
       subtotalPence: row.subtotal_pence,
       shippingPence: row.shipping_pence,
+      shippingService: null,
       totalPence: row.total_pence,
       createdAt: new Date(row.created_at).toISOString(),
       shippingAddress: row.shipping_address ?? null,
