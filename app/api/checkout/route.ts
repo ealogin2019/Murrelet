@@ -106,7 +106,9 @@ export async function POST(req: NextRequest) {
     const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
     // Flat-rate shipping, in pence. UK: free standard over £70, otherwise
-    // £3.95 standard or £5.95 express. Ireland: £7.95 flat. Stripe Checkout
+    // £3.95 standard or £5.95 express. Ireland: £9.95 flat -- Sendcloud's
+    // cheapest contracted option to Dublin is £8.80 (quoted 2026-09-26), so
+    // the old £7.95 lost 85p plus the label fee on every Irish order. Stripe Checkout
     // cannot vary options by the address the customer types, so Ireland is a
     // separately-labelled option the customer picks. Mirror any change on
     // app/cart/page.tsx, app/shipping-returns, Footer, Header, TrustStrip,
@@ -144,7 +146,7 @@ export async function POST(req: NextRequest) {
       {
         shipping_rate_data: {
           type: "fixed_amount",
-          fixed_amount: { amount: 795, currency: "gbp" },
+          fixed_amount: { amount: 995, currency: "gbp" },
           display_name: "Ireland delivery (3–5 days)",
           delivery_estimate: {
             minimum: { unit: "business_day", value: 3 },

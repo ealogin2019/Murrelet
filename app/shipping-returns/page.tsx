@@ -27,7 +27,7 @@ export default function ShippingReturnsPage() {
           </tr>
           <tr>
             <td>Ireland</td>
-            <td>£7.95 · 3–5 business days</td>
+            <td>£9.95 · 3–5 business days</td>
           </tr>
         </tbody>
       </table>
