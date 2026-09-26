@@ -108,8 +108,22 @@ export async function pickOption(
     }),
   });
   const list: any[] = json?.data ?? [];
+  // Letter formats are excluded. Sendcloud quotes Royal Mail Tracked 48
+  // "letter" for anything up to 750 g -- £2.38 against £3.04 for the smallest
+  // parcel -- and sorting by price alone picks it for a hoodie. A Large Letter
+  // is capped at 25 mm thick; a folded hoodie is nothing like that, so the
+  // parcel is surcharged or returned at the sorting centre and the 66p saved
+  // costs several pounds. Price is not the only constraint, and the quote API
+  // does not know what is in the box.
+  //
+  // To sell a garment that genuinely is letter-sized, measure it and pin the
+  // code with SENDCLOUD_SHIPPING_OPTION_CODE rather than removing this filter.
   const usable = list.filter(
-    (o) => o?.code && o?.contract?.id && (o?.functionalities?.last_mile ?? "home_delivery") === "home_delivery"
+    (o) =>
+      o?.code &&
+      o?.contract?.id &&
+      (o?.functionalities?.last_mile ?? "home_delivery") === "home_delivery" &&
+      !/\/letter$/.test(o.code)
   );
   if (!usable.length) {
     throw new Error("Sendcloud has no contracted home-delivery option for this route.");
@@ -229,6 +243,7 @@ function houseNumber(line: string): string | undefined {
 const GARMENT_GRAMS: Record<string, number> = {
   "t-shirts": 200,
   hoodies: 600,
+  sweatshirts: 520,
 };
 const PACKAGING_GRAMS = 60;
 
