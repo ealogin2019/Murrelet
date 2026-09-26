@@ -39,11 +39,15 @@ export async function POST(req: NextRequest) {
   else if (sig) ok = equal(sig, createHmac("sha256", secret).update(body).digest("hex"));
   if (!ok) return NextResponse.json({ error: "Unauthorised." }, { status: 401 });
 
+  // Sendcloud pings this URL when the integration is saved, and that ping
+  // carries no parcel — sometimes no body at all. The caller has already
+  // proved it knows the secret, so answer 200: a 4xx here reads as "your
+  // store is broken" in their panel and the integration will not save.
   let event: any;
   try {
-    event = JSON.parse(body);
+    event = body ? JSON.parse(body) : {};
   } catch {
-    return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
+    return NextResponse.json({ received: true, ignored: "non-JSON body" });
   }
   if (event?.action !== "parcel_status_changed") {
     return NextResponse.json({ received: true, ignored: event?.action ?? "unknown" });
