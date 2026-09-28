@@ -19,7 +19,7 @@
     "next": "15.5.26",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "stripe": "^16.2.0"
+    "stripe": "^22.6.2"
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "^1.20.6",
