@@ -11,14 +11,13 @@ updates:
       minor-and-patch:
         update-types: [minor, patch]
     ignore:
-      # Next majors are deliberate projects, not weekly bumps: the Cloudflare
-      # adapter (@opennextjs/cloudflare) pins which Next majors it supports,
-      # and 14 -> 15 needed a codemod and React 19.
-      - dependency-name: next
-        update-types: [version-update:semver-major]
-      - dependency-name: react
-        update-types: [version-update:semver-major]
-      - dependency-name: react-dom
+      # No npm MAJOR versions as weekly PRs -- each is a deliberate project.
+      # The first batch (2026-09-28) showed why: TypeScript 7 failed CI;
+      # Stripe 16 -> 22 is the payment and webhook path, where a green build
+      # proves only that it compiles; @types/node 26 describes a Node newer
+      # than the Node 22 we run; and Next majors are pinned by the Cloudflare
+      # adapter.
+      - dependency-name: "*"
         update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
