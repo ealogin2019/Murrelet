@@ -1,0 +1,26 @@
+# Dependency updates. Minor and patch bumps arrive as one grouped PR a week;
+# CI (.github/workflows/ci.yml) type-checks and builds each one before merge.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Next majors are deliberate projects, not weekly bumps: the Cloudflare
+      # adapter (@opennextjs/cloudflare) pins which Next majors it supports,
+      # and 14 -> 15 needed a codemod and React 19.
+      - dependency-name: next
+        update-types: [version-update:semver-major]
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
