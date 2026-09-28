@@ -264,6 +264,9 @@ const GARMENT_GRAMS: Record<string, number> = {
   "t-shirts": 200,
   hoodies: 600,
   sweatshirts: 520,
+  // Provisional until the real blank is weighed: a typical quilted hooded
+  // puffer at this price is 750-950 g.
+  "puffer-jackets": 850,
 };
 const PACKAGING_GRAMS = 60;
 

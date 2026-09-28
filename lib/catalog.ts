@@ -833,6 +833,117 @@ const smallTextLogoSweatshirt = sweatshirt(
   SMALL_SWEATSHIRT_COLOURS
 );
 
+/** Colourways of the puffer jackets.
+ *
+ *  The six existing colour numbers are reused -- decided by the owner
+ *  2026-09-28 after measurement. New numbers were asked for first, but three
+ *  of the six (White 1.7, Light Grey 1.5, Graphite 1.8 from their standards)
+ *  measure as colours already issued, and assertColoursDistinct refuses two
+ *  numbers for one cloth. Swatches are measured off each shoot's own flat lay.
+ *
+ *  Two measurements to keep an eye on, raised as warnings rather than errors
+ *  because the metric cannot separate cloth from light: Wordmark's black reads
+ *  nearer Charcoal (4.7) than Black (13.1) -- nylon sheen, or a charcoal
+ *  garment -- and the Small shoot's sky blue sits 13.3 from Sky Blue.
+ *
+ *  Large.Text navy and Small.Logo black have four shots; there was no usable
+ *  side. */
+const PUFFER_COLOURS = (swatches: [string, string, string, string, string, string]) =>
+  [
+    { colour: "Black", folder: "black" },
+    { colour: "Graphite", folder: "grey" },
+    { colour: "Light Grey", folder: "light-grey" },
+    { colour: "Navy", folder: "navy-blue" },
+    { colour: "Sky Blue", folder: "light-blue" },
+    { colour: "White", folder: "white" },
+  ].map((c, i) => ({ ...c, swatch: swatches[i], shots: 5 }));
+
+const LARGE_TEXT_PUFFER_COLOURS = PUFFER_COLOURS([
+  "#30302F", "#4B484C", "#C3C4C6", "#233154", "#BADBFC", "#F5F5F7",
+]);
+const SMALL_PUFFER_COLOURS = PUFFER_COLOURS([
+  "#232323", "#545255", "#CBCBCD", "#222D48", "#A2CCFA", "#F5F6F8",
+]);
+
+// PROVISIONAL composition (owner, 2026-09-28): the market-typical spec for a
+// quilted hooded puffer at this price, pending the real blank's label. To be
+// checked against the supplier before launch -- a wrong fibre claim is a
+// Consumer Rights Act problem, not a copy problem.
+const PUFFER_DETAILS = [
+  "Polyester shell and lining, polyester wadding",
+  "Regular fit — true to size; size up to layer a hoodie underneath",
+  "Quilted body, fixed hood, full-length zip, two front pockets",
+  "Machine wash at 30°C on a gentle cycle, zipped; do not tumble dry",
+  "Returns within 14 days — see Shipping & Returns",
+];
+
+const PUFFER_BODY =
+  " A quilted hooded puffer with a full-length zip and two front pockets. "
+  + "Evenly baffled so the fill stays put, with a regular fit and room to "
+  + "layer underneath.";
+
+function puffer(
+  id: "large-text-puffer-jacket" | "small-logo-puffer-jacket" | "small-text-logo-puffer-jacket",
+  slug: string,
+  name: string,
+  treatment: TreatmentKey,
+  lead: string,
+  colours: { colour: string; swatch: string; shots: number; folder: string }[],
+  missing: Record<string, number> = {}
+): Product {
+  return {
+    id,
+    slug,
+    name,
+    category: "men",
+    type: "puffer-jackets",
+    description: lead + PUFFER_BODY,
+    details: PUFFER_DETAILS,
+    badges: ["NEW ARRIVAL"],
+    // £65: the median full price of branded high-street hooded puffers
+    // (Jack & Jones UK, £35-£95, mean £64), researched 2026-09-28. Premium
+    // indie streetwear sits at £125-£175 -- not this shop's tier.
+    price: 6500,
+    variants: colours.map(({ colour, swatch, shots: n, folder }) => ({
+      id: `${id}-${folder}`,
+      colour,
+      swatch,
+      price: null,
+      images: shots(id, folder, missing[folder] ?? n),
+      skus: skuRun("puffer-jackets", treatment, colour),
+    })),
+  };
+}
+
+const largeTextPuffer = puffer(
+  "large-text-puffer-jacket",
+  "wordmark-puffer-jacket",
+  "Wordmark Puffer Jacket",
+  "large-text",
+  "The Murrelet wordmark running vertically down the right chest, with the crest at the neck.",
+  LARGE_TEXT_PUFFER_COLOURS,
+  { "navy-blue": 4 }
+);
+
+const smallLogoPuffer = puffer(
+  "small-logo-puffer-jacket",
+  "crest-puffer-jacket",
+  "Crest Puffer Jacket",
+  "small-logo",
+  "The Murrelet crest, small at the left chest.",
+  SMALL_PUFFER_COLOURS,
+  { black: 4 }
+);
+
+const smallTextLogoPuffer = puffer(
+  "small-text-logo-puffer-jacket",
+  "signature-puffer-jacket",
+  "Signature Puffer Jacket",
+  "small-text-logo",
+  "The crest and wordmark, small at the left chest.",
+  SMALL_PUFFER_COLOURS
+);
+
 export const seedCatalog: Product[] = [
   largeTextTee,
   smallTextLogoTee,
@@ -843,6 +954,9 @@ export const seedCatalog: Product[] = [
   largeTextSweatshirt,
   smallLogoSweatshirt,
   smallTextLogoSweatshirt,
+  largeTextPuffer,
+  smallLogoPuffer,
+  smallTextLogoPuffer,
   {
     id: "linen-shirt",
     slug: "custom-fit-linen-shirt",

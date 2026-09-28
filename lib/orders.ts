@@ -322,7 +322,7 @@ export async function markOrderDelivered(orderId: string): Promise<boolean> {
  */
 export function garmentTypeFromSku(skuId: string | null): string | null {
   if (!skuId || !/^\d{10}$/.test(skuId)) return null;
-  const t: Record<string, string> = { "90": "t-shirts", "91": "hoodies", "92": "sweatshirts" };
+  const t: Record<string, string> = { "90": "t-shirts", "91": "hoodies", "92": "sweatshirts", "96": "puffer-jackets" };
   return t[skuId.slice(2, 4)] ?? null;
 }
 

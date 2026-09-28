@@ -3,7 +3,7 @@ import InfoPage from "@/components/InfoPage";
 
 export const metadata: Metadata = {
   title: "Size Guide",
-  description: "Garment measurements for Murrelet tees, hoodies and sweatshirts, size by size, with the chest each size is cut for.",
+  description: "Garment measurements for Murrelet tees, hoodies, sweatshirts and puffer jackets, size by size.",
 };
 
 // These are the garments' own spec sheets, not generic UK ranges: the tee
@@ -46,6 +46,43 @@ const SWEATSHIRT = [
   { size: "XL", chest: "48", width: 64, length: 78 },
   { size: "XXL", chest: "52", width: 68, length: 81 },
 ];
+
+// Puffer jacket: the owner's chart (pufferchart1, 2026-09-28). The supplier
+// gives flat measurements only -- no to-fit chest -- so this table shows what
+// was measured and adds sleeve, which matters more on a jacket than a tee.
+const PUFFER = [
+  { size: "XS", width: 64, length: 67, sleeve: 58 },
+  { size: "S", width: 66, length: 69, sleeve: 59 },
+  { size: "M", width: 68, length: 71, sleeve: 60 },
+  { size: "L", width: 70, length: 73, sleeve: 61 },
+  { size: "XL", width: 72, length: 75, sleeve: 62 },
+  { size: "XXL", width: 74, length: 77, sleeve: 63 },
+];
+
+function PufferChart() {
+  return (
+    <table className="info-table size-table">
+      <thead>
+        <tr>
+          <th>Size</th>
+          <th>Chest width (cm)</th>
+          <th>Body length (cm)</th>
+          <th>Sleeve (cm)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {PUFFER.map((r) => (
+          <tr key={r.size}>
+            <td>{r.size}</td>
+            <td>{r.width}</td>
+            <td>{r.length}</td>
+            <td>{r.sleeve}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
 function Chart({ rows }: { rows: typeof TEE }) {
   return (
@@ -94,6 +131,13 @@ export default function SizeGuidePage() {
       <h2>Sweatshirts</h2>
       <p>Regular fit with room to layer. True to size; size up for an oversized look.</p>
       <Chart rows={SWEATSHIRT} />
+
+      <h2>Puffer jackets</h2>
+      <p>
+        Regular fit with room for a hoodie underneath. Measured flat, armpit to
+        armpit; sleeve from the shoulder seam to the cuff.
+      </p>
+      <PufferChart />
 
       <h2>How to measure</h2>
       <p>
