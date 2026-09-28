@@ -1,0 +1,19 @@
+// Cloudflare Workers deployment for murrelet.co.uk (replacing Vercel).
+//
+// nodejs_compat is required: the app uses node:crypto (createHash for the
+// catalogue version, createHmac/timingSafeEqual in the Sendcloud webhook) and
+// Buffer. Secrets are NOT in this file -- they are set with
+// `npx wrangler secret put NAME` by the owner, one per variable, matching the
+// names in .env.example.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "murrelet",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": { "enabled": true }
+}

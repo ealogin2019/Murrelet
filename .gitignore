@@ -24,3 +24,8 @@ email-preview.html
 # time and would go stale in the repository.
 backups/
 .tmp/
+
+# Cloudflare Workers build output and local secrets
+.open-next/
+.wrangler/
+.dev.vars
