@@ -7,14 +7,16 @@ import ProductDetail from "@/components/ProductDetail";
 export const dynamic = "force-dynamic";
 
 type Props = {
-  params: { slug: string };
-  searchParams: { colour?: string };
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ colour?: string }>;
 };
 
 // Product pages are the pages that need to be findable, so the title,
 // description, and share image come from real catalog data rather than the
 // layout default. The layout's title template appends "— Murrelet".
-export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const product = findProduct(await getCatalog(), params.slug);
   if (!product) return { title: "Product not found" };
 
@@ -46,7 +48,9 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   };
 }
 
-export default async function ProductPage({ params, searchParams }: Props) {
+export default async function ProductPage(props: Props) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const product = findProduct(await getCatalog(), params.slug);
   // A real 404 rather than a rendered "not found" panel, so a removed product
   // returns the right status code instead of a 200 with apology text.

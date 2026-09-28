@@ -6,11 +6,12 @@ import PendingOrder from "@/components/PendingOrder";
 
 export const dynamic = "force-dynamic";
 
-export default async function SuccessPage({
-  searchParams,
-}: {
-  searchParams: { session_id?: string };
-}) {
+export default async function SuccessPage(
+  props: {
+    searchParams: Promise<{ session_id?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const sessionId = searchParams.session_id;
   const order = sessionId ? await getOrderBySession(sessionId) : null;
 

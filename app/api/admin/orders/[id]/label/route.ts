@@ -4,7 +4,8 @@ import { createLabel, labelUrl, ShippingError } from "@/lib/shipping";
 export const dynamic = "force-dynamic";
 
 // Buys (or re-returns) the label for one paid order. Status stays 'paid'.
-export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const order = await createLabel(params.id);
     return NextResponse.json({ order: { ...order, labelUrl: await labelUrl(order) } });

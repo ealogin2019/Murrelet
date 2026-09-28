@@ -7,13 +7,14 @@ import { categories, Category } from "@/lib/catalog";
 // drift apart, this route is just a permanent redirect into the one real
 // listing, pre-selecting gender.
 
-type Props = { params: { category: string } };
+type Props = { params: Promise<{ category: string }> };
 
 function asCategory(value: string): Category | null {
   return (categories as readonly string[]).includes(value) ? (value as Category) : null;
 }
 
-export default function CategoryRedirect({ params }: Props) {
+export default async function CategoryRedirect(props: Props) {
+  const params = await props.params;
   const category = asCategory(params.category);
   // Any single-segment path that isn't a real category (or a stray typo)
   // falls through to this route — literal top-level routes like /cart or
