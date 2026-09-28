@@ -112,6 +112,15 @@ export const config = {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // One canonical address. www is served (people type it) but always moved to
+  // the bare domain, before the password prompt so the credential is asked
+  // for once, on the address it will be remembered for. 308 keeps the method,
+  // so a POST sent to www is not silently turned into a GET.
+  if (req.headers.get("host")?.toLowerCase() === "www.murrelet.co.uk") {
+    const to = new URL(req.nextUrl.pathname + req.nextUrl.search, "https://murrelet.co.uk");
+    return NextResponse.redirect(to, 308);
+  }
+
   if (!PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {
     const ok = sitePasswordOk(req);
     if (ok === null) {

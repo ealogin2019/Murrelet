@@ -15,5 +15,14 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // The live domain. Custom domains make Cloudflare create and own the DNS
+  // records and certificates for these names, so any existing A/CNAME for
+  // them (the old Vercel ones) must be deleted from the zone first or the
+  // deploy refuses. www is served too, and middleware.ts redirects it to the
+  // bare domain so there is one canonical address.
+  "routes": [
+    { "pattern": "murrelet.co.uk", "custom_domain": true },
+    { "pattern": "www.murrelet.co.uk", "custom_domain": true }
+  ]
 }
