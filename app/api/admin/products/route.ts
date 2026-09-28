@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth";
 import { getCatalog, saveCatalog, catalogVersion } from "@/lib/catalog-store";
 import { Product, productTypes } from "@/lib/catalog";
 
@@ -7,11 +8,15 @@ export const dynamic = "force-dynamic";
 // Protected by middleware.ts (requires a valid admin session cookie).
 
 export async function GET() {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const products = await getCatalog();
   return NextResponse.json({ products, version: catalogVersion(products) });
 }
 
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const body = await req.json().catch(() => null);
   const products = body?.products as Product[] | undefined;
   const baseVersion = body?.baseVersion as string | undefined;

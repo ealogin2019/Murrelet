@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth";
 import { createLabel, labelUrl, ShippingError } from "@/lib/shipping";
 
 export const dynamic = "force-dynamic";
 
 // Buys (or re-returns) the label for one paid order. Status stays 'paid'.
 export async function POST(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const params = await props.params;
   try {
     const order = await createLabel(params.id);

@@ -31,7 +31,7 @@ export async function saveHeroSlides(slides: HeroSlide[]): Promise<void> {
 }
 
 /** Stores an uploaded image publicly and returns its URL. */
-export async function uploadImage(pathname: string, file: File): Promise<string> {
-  await putObject(pathname, file, file.type || "application/octet-stream");
+export async function uploadImage(pathname: string, file: File, contentType: string): Promise<string> {
+  await putObject(pathname, file, contentType);
   return publicUrl(pathname);
 }

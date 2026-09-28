@@ -1128,6 +1128,21 @@ export const seedCatalog: Product[] = [
  * no photographed standard to be measured against, and inventing a tolerance
  * for a colour nobody has dyed yet would be theatre.
  */
+/**
+ * Far-from-standard measurements the owner has looked at and passed. Each is
+ * "product id / colour" with the date and what was decided. A passed colour
+ * stops warning -- the warning exists to raise a question for a person, and
+ * once the person has answered it, repeating it on every process start is
+ * noise that buries the next real one.
+ */
+const PASSED_BY_EYE = new Set([
+  // 2026-09-28: sky blue on the Small puffer shoot, dE 13.3 -- passed on sight.
+  "small-logo-puffer-jacket/Sky Blue",
+  "small-text-logo-puffer-jacket/Sky Blue",
+  // 2026-09-28: Wordmark puffer navy, dE 9.3 -- passed on sight.
+  "large-text-puffer-jacket/Navy",
+]);
+
 (function assertColoursDistinct() {
   const standards = new Map(COLOUR_STANDARDS.map((c) => [c.name, c]));
 
@@ -1140,7 +1155,7 @@ export const seedCatalog: Product[] = [
       }
       if (!std.standard) continue;
       const d = deltaE(v.swatch, std.standard);
-      if (d >= FAR_FROM_STANDARD) {
+      if (d >= FAR_FROM_STANDARD && !PASSED_BY_EYE.has(`${p.id}/${v.colour}`)) {
         console.warn(
           `Colour ${std.number} ${v.colour}: ${p.name} measures dE ${d.toFixed(1)} ` +
           `from the standard ${std.standard}. Either a different cloth wearing ` +

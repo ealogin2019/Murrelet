@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth";
 import { getOrderById } from "@/lib/orders";
 import { shipOrder, deliverOrder } from "@/lib/shipping";
 
@@ -7,6 +8,8 @@ export const dynamic = "force-dynamic";
 // The admin's "Mark shipped" / "Mark delivered". The dispatch email goes on
 // the first of button or carrier scan to make the paid -> shipped move.
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const params = await props.params;
   const body = await req.json().catch(() => ({}));
   const to = body?.to === "delivered" ? "delivered" : "shipped";

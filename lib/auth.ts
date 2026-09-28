@@ -59,3 +59,23 @@ export function checkPassword(candidate: string): boolean {
   if (!actual) return false;
   return timingSafeEqualStr(candidate, actual);
 }
+
+/**
+ * The admin session check, for use INSIDE every /api/admin/* handler.
+ *
+ * middleware.ts already refuses these routes without a valid session, and
+ * this repeats that check on purpose. On Cloudflare Workers the middleware
+ * runs through the OpenNext adapter rather than Vercel's edge, and a route
+ * that trusts the layer in front of it is one adapter bug, matcher typo or
+ * config change away from being open. Checking where the data is touched
+ * costs one HMAC.
+ *
+ *   const denied = await requireAdmin();
+ *   if (denied) return denied;
+ */
+export async function requireAdmin(): Promise<Response | null> {
+  const { cookies } = await import("next/headers");
+  const token = (await cookies()).get(ADMIN_COOKIE)?.value;
+  if (await verifySessionToken(token)) return null;
+  return Response.json({ error: "Not signed in." }, { status: 401, headers: { "Cache-Control": "no-store" } });
+}

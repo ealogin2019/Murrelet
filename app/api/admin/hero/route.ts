@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth";
 import { getHeroSlides, saveHeroSlides } from "@/lib/blob-store";
 import { HeroSlide } from "@/lib/hero";
 
@@ -7,11 +8,15 @@ export const dynamic = "force-dynamic";
 // Protected by middleware.ts (requires a valid admin session cookie).
 
 export async function GET() {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const slides = await getHeroSlides();
   return NextResponse.json({ slides });
 }
 
 export async function POST(req: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const body = await req.json().catch(() => null);
   const slides = body?.slides as HeroSlide[] | undefined;
 
