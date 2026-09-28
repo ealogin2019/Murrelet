@@ -13,6 +13,13 @@ import { Order } from "@/lib/orders";
 import { formatPrice } from "@/lib/format";
 import { SITE_URL } from "@/lib/site";
 
+// Order lines store the image as the site uses it -- "/images/catalog/...".
+// An email has no page to resolve a relative path against, so every image in
+// a message must be an absolute URL or it renders as its alt text (which is
+// what the first real confirmation showed, and a broken image is itself a
+// spam signal to Outlook/Hotmail).
+const absolute = (src: string) => (src.startsWith("/") ? `${SITE_URL}${src}` : src);
+
 const INK = "#141414";
 const MUTED = "#6b6b6b";
 const RULE = "#e3e1dd";
@@ -54,7 +61,7 @@ export function orderConfirmation(order: Order): {
     .map((i) => {
       const cell = "padding:16px 0;border-bottom:1px solid " + RULE + ";vertical-align:top;";
       const thumb = i.imageUrl
-        ? `<img src="${esc(i.imageUrl)}" width="64" alt="${esc(i.productName)}" style="display:block;width:64px;height:auto;border:0;background:${PAPER};" />`
+        ? `<img src="${esc(absolute(i.imageUrl))}" width="64" alt="${esc(i.productName)}" style="display:block;width:64px;height:auto;border:0;background:${PAPER};" />`
         : "";
       return `
       <tr>
