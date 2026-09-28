@@ -841,16 +841,18 @@ const smallTextLogoSweatshirt = sweatshirt(
  *  measure as colours already issued, and assertColoursDistinct refuses two
  *  numbers for one cloth. Swatches are measured off each shoot's own flat lay.
  *
- *  Two measurements to keep an eye on, raised as warnings rather than errors
- *  because the metric cannot separate cloth from light: Wordmark's black reads
- *  nearer Charcoal (4.7) than Black (13.1) -- nylon sheen, or a charcoal
- *  garment -- and the Small shoot's sky blue sits 13.3 from Sky Blue.
+ *  The Small shoot's sky blue sits 13.3 from Sky Blue and Wordmark's navy 9.3
+ *  from Navy; both raise warnings and both were passed by the owner on sight,
+ *  2026-09-28.
  *
  *  Large.Text navy and Small.Logo black have four shots; there was no usable
  *  side. */
-const PUFFER_COLOURS = (swatches: [string, string, string, string, string, string]) =>
+const PUFFER_COLOURS = (
+  swatches: [string, string, string, string, string, string],
+  first = "Black"
+) =>
   [
-    { colour: "Black", folder: "black" },
+    { colour: first, folder: "black" },
     { colour: "Graphite", folder: "grey" },
     { colour: "Light Grey", folder: "light-grey" },
     { colour: "Navy", folder: "navy-blue" },
@@ -858,9 +860,15 @@ const PUFFER_COLOURS = (swatches: [string, string, string, string, string, strin
     { colour: "White", folder: "white" },
   ].map((c, i) => ({ ...c, swatch: swatches[i], shots: 5 }));
 
-const LARGE_TEXT_PUFFER_COLOURS = PUFFER_COLOURS([
-  "#30302F", "#4B484C", "#C3C4C6", "#233154", "#BADBFC", "#F5F5F7",
-]);
+// Wordmark's first colourway is CHARCOAL, not black: it measured 4.7 from
+// Charcoal and 13.1 from Black, and the owner confirmed it by eye on
+// 2026-09-28. It was briefly listed as Black under 2696001xxx; those codes are
+// retired, never reissued, and it sells as 2696004xxx. The image folder keeps
+// its engine name.
+const LARGE_TEXT_PUFFER_COLOURS = PUFFER_COLOURS(
+  ["#30302F", "#4B484C", "#C3C4C6", "#233154", "#BADBFC", "#F5F5F7"],
+  "Charcoal"
+);
 const SMALL_PUFFER_COLOURS = PUFFER_COLOURS([
   "#232323", "#545255", "#CBCBCD", "#222D48", "#A2CCFA", "#F5F6F8",
 ]);
